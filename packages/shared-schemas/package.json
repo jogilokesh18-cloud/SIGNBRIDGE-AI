@@ -1,0 +1,17 @@
+{
+  "name": "@signbridge/shared-schemas",
+  "version": "1.0.0",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@signbridge/shared-types": "*",
+    "typescript": "^5.4.5"
+  }
+}

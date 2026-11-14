@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 300 300" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+  <!-- Card Background -->
+  <rect width="300" height="300" rx="24" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+
+  <!-- Top Letter Badge -->
+  <g transform="translate(24, 24)">
+    <circle cx="24" cy="24" r="24" fill="#3b82f6"/>
+    <text x="24" y="32" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="900" text-anchor="middle">B</text>
+  </g>
+
+  <!-- Motion / Static Badge -->
+  <g transform="translate(180, 20)">
+        <rect width="90" height="28" rx="14" fill="#10b981" opacity="0.85"/>
+        <text x="45" y="18" fill="#ffffff" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">STATIC POSE</text>
+      </g>
+
+  <!-- Hand Anatomy Illustration -->
+  <g id="hand-shape">
+    
+        <!-- Flat Palm -->
+        <rect x="100" y="130" width="95" height="90" rx="30" fill="#f8d7b8" stroke="#d97706" stroke-width="4"/>
+        <!-- 4 Straight Fingers Up -->
+        <rect x="100" y="30" width="20" height="115" rx="10" fill="#fbdcb9" stroke="#d97706" stroke-width="3"/>
+        <rect x="123" y="20" width="20" height="125" rx="10" fill="#fbdcb9" stroke="#d97706" stroke-width="3"/>
+        <rect x="146" y="25" width="20" height="120" rx="10" fill="#fbdcb9" stroke="#d97706" stroke-width="3"/>
+        <rect x="169" y="45" width="20" height="100" rx="10" fill="#fbdcb9" stroke="#d97706" stroke-width="3"/>
+        <!-- Thumb folded across palm -->
+        <path d="M 90 170 C 110 150, 150 150, 165 165 C 170 175, 155 185, 130 185 L 95 185 Z" fill="#f4caa1" stroke="#d97706" stroke-width="4"/>
+      
+  </g>
+
+  <!-- Base Label -->
+  <text x="150" y="278" fill="#475569" font-family="system-ui, sans-serif" font-size="14" font-weight="600" text-anchor="middle">
+    ASL Sign: B (Static Pose)
+  </text>
+</svg>

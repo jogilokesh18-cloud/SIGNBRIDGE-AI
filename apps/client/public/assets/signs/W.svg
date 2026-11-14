@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 300 300" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+  <!-- Card Background -->
+  <rect width="300" height="300" rx="24" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+
+  <!-- Top Letter Badge -->
+  <g transform="translate(24, 24)">
+    <circle cx="24" cy="24" r="24" fill="#3b82f6"/>
+    <text x="24" y="32" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="900" text-anchor="middle">W</text>
+  </g>
+
+  <!-- Motion / Static Badge -->
+  <g transform="translate(180, 20)">
+        <rect width="90" height="28" rx="14" fill="#10b981" opacity="0.85"/>
+        <text x="45" y="18" fill="#ffffff" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">STATIC POSE</text>
+      </g>
+
+  <!-- Hand Anatomy Illustration -->
+  <g id="hand-shape">
+    
+        <!-- 3 Fingers Up in W Shape -->
+        <rect x="95" y="125" width="90" height="90" rx="30" fill="#f8d7b8" stroke="#d97706" stroke-width="4"/>
+        <path d="M 115 135 L 80 40 C 75 30, 60 35, 65 45 L 105 145 Z" fill="#fbdcb9" stroke="#d97706" stroke-width="3"/>
+        <rect x="127" y="25" width="20" height="120" rx="10" fill="#fbdcb9" stroke="#d97706" stroke-width="3"/>
+        <path d="M 155 135 L 190 40 C 195 30, 210 35, 205 45 L 165 145 Z" fill="#fbdcb9" stroke="#d97706" stroke-width="3"/>
+      
+  </g>
+
+  <!-- Base Label -->
+  <text x="150" y="278" fill="#475569" font-family="system-ui, sans-serif" font-size="14" font-weight="600" text-anchor="middle">
+    ASL Sign: W (Static Pose)
+  </text>
+</svg>

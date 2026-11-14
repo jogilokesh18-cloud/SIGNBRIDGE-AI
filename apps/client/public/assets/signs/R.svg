@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 300 300" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+  <!-- Card Background -->
+  <rect width="300" height="300" rx="24" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+
+  <!-- Top Letter Badge -->
+  <g transform="translate(24, 24)">
+    <circle cx="24" cy="24" r="24" fill="#3b82f6"/>
+    <text x="24" y="32" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="900" text-anchor="middle">R</text>
+  </g>
+
+  <!-- Motion / Static Badge -->
+  <g transform="translate(180, 20)">
+        <rect width="90" height="28" rx="14" fill="#10b981" opacity="0.85"/>
+        <text x="45" y="18" fill="#ffffff" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">STATIC POSE</text>
+      </g>
+
+  <!-- Hand Anatomy Illustration -->
+  <g id="hand-shape">
+    
+        <!-- Crossed Index and Middle Fingers -->
+        <rect x="95" y="125" width="90" height="90" rx="30" fill="#f8d7b8" stroke="#d97706" stroke-width="4"/>
+        <!-- Index Finger Behind -->
+        <path d="M 120 135 L 145 35 C 150 25, 165 30, 160 40 L 135 140 Z" fill="#fbdcb9" stroke="#d97706" stroke-width="3"/>
+        <!-- Middle Finger Crossed In Front -->
+        <path d="M 145 135 L 120 35 C 115 25, 100 30, 105 40 L 130 140 Z" fill="#f4caa1" stroke="#d97706" stroke-width="3"/>
+        <circle cx="110" cy="145" r="14" fill="#f4caa1" stroke="#d97706" stroke-width="3"/>
+      
+  </g>
+
+  <!-- Base Label -->
+  <text x="150" y="278" fill="#475569" font-family="system-ui, sans-serif" font-size="14" font-weight="600" text-anchor="middle">
+    ASL Sign: R (Static Pose)
+  </text>
+</svg>

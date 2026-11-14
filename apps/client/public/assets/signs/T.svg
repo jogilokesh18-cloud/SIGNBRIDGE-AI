@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 300 300" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+  <!-- Card Background -->
+  <rect width="300" height="300" rx="24" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+
+  <!-- Top Letter Badge -->
+  <g transform="translate(24, 24)">
+    <circle cx="24" cy="24" r="24" fill="#3b82f6"/>
+    <text x="24" y="32" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="900" text-anchor="middle">T</text>
+  </g>
+
+  <!-- Motion / Static Badge -->
+  <g transform="translate(180, 20)">
+        <rect width="90" height="28" rx="14" fill="#10b981" opacity="0.85"/>
+        <text x="45" y="18" fill="#ffffff" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">STATIC POSE</text>
+      </g>
+
+  <!-- Hand Anatomy Illustration -->
+  <g id="hand-shape">
+    
+        <!-- Fist with Thumb Between Index and Middle -->
+        <rect x="95" y="105" width="105" height="110" rx="35" fill="#f8d7b8" stroke="#d97706" stroke-width="4"/>
+        <rect x="105" y="85" width="24" height="50" rx="10" fill="#f4caa1" stroke="#d97706" stroke-width="3"/>
+        <!-- Thumb tip popping up -->
+        <circle cx="132" cy="105" r="12" fill="#fbdcb9" stroke="#d97706" stroke-width="4"/>
+      
+  </g>
+
+  <!-- Base Label -->
+  <text x="150" y="278" fill="#475569" font-family="system-ui, sans-serif" font-size="14" font-weight="600" text-anchor="middle">
+    ASL Sign: T (Static Pose)
+  </text>
+</svg>

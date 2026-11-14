@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 300 300" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+  <!-- Card Background -->
+  <rect width="300" height="300" rx="24" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+
+  <!-- Top Letter Badge -->
+  <g transform="translate(24, 24)">
+    <circle cx="24" cy="24" r="24" fill="#3b82f6"/>
+    <text x="24" y="32" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="900" text-anchor="middle">K</text>
+  </g>
+
+  <!-- Motion / Static Badge -->
+  <g transform="translate(180, 20)">
+        <rect width="90" height="28" rx="14" fill="#10b981" opacity="0.85"/>
+        <text x="45" y="18" fill="#ffffff" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">STATIC POSE</text>
+      </g>
+
+  <!-- Hand Anatomy Illustration -->
+  <g id="hand-shape">
+    
+        <!-- Palm -->
+        <rect x="95" y="125" width="90" height="90" rx="30" fill="#f8d7b8" stroke="#d97706" stroke-width="4"/>
+        <!-- Index Finger Straight Up -->
+        <rect x="105" y="25" width="22" height="115" rx="11" fill="#fbdcb9" stroke="#d97706" stroke-width="3"/>
+        <!-- Middle Finger angled forward -->
+        <path d="M 130 135 L 175 55 C 185 45, 195 60, 185 70 L 145 145 Z" fill="#fbdcb9" stroke="#d97706" stroke-width="3"/>
+        <!-- Thumb wedged between -->
+        <circle cx="135" cy="110" r="14" fill="#f4caa1" stroke="#d97706" stroke-width="3"/>
+      
+  </g>
+
+  <!-- Base Label -->
+  <text x="150" y="278" fill="#475569" font-family="system-ui, sans-serif" font-size="14" font-weight="600" text-anchor="middle">
+    ASL Sign: K (Static Pose)
+  </text>
+</svg>

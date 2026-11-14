@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 300 300" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+  <!-- Card Background -->
+  <rect width="300" height="300" rx="24" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+
+  <!-- Top Letter Badge -->
+  <g transform="translate(24, 24)">
+    <circle cx="24" cy="24" r="24" fill="#3b82f6"/>
+    <text x="24" y="32" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="900" text-anchor="middle">J</text>
+  </g>
+
+  <!-- Motion / Static Badge -->
+  <g transform="translate(180, 20)">
+        <rect width="100" height="28" rx="14" fill="#6366f1" opacity="0.9"/>
+        <text x="50" y="18" fill="#ffffff" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">MOTION SIGN</text>
+      </g>
+
+  <!-- Hand Anatomy Illustration -->
+  <g id="hand-shape">
+    
+        <!-- Fist with Pinky Swooping in J Shape Motion -->
+        <rect x="95" y="110" width="95" height="100" rx="35" fill="#f8d7b8" stroke="#d97706" stroke-width="4"/>
+        <rect x="170" y="55" width="20" height="90" rx="10" fill="#fbdcb9" stroke="#d97706" stroke-width="4"/>
+        <!-- Dynamic J-curve arrow path -->
+        <path d="M 180 50 C 180 15, 230 40, 220 100 C 210 160, 160 170, 140 145" fill="none" stroke="#6366f1" stroke-width="6" stroke-dasharray="8 4" stroke-linecap="round"/>
+        <polygon points="135,140 145,155 130,155" fill="#6366f1"/>
+      
+  </g>
+
+  <!-- Base Label -->
+  <text x="150" y="278" fill="#475569" font-family="system-ui, sans-serif" font-size="14" font-weight="600" text-anchor="middle">
+    ASL Sign: J (Dynamic Motion)
+  </text>
+</svg>

@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-bg: #f8fafc;
+    --color-surface: #ffffff;
+    --color-text: #0f172a;
+    --color-border: #e2e8f0;
+  }
+
+  .high-contrast {
+    --color-bg: #000000;
+    --color-surface: #121212;
+    --color-text: #ffffff;
+    --color-border: #ffffff;
+  }
+
+  .high-contrast body {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+  }
+
+  .high-contrast button,
+  .high-contrast input,
+  .high-contrast textarea,
+  .high-contrast select {
+    border-color: #ffffff !important;
+    color: #ffffff !important;
+  }
+
+  /* Accessibility focus ring */
+  *:focus-visible {
+    outline: 3px solid #2563eb;
+    outline-offset: 2px;
+  }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
