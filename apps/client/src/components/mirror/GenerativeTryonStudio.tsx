@@ -5,16 +5,9 @@ import {
   Download,
   SplitSquareVertical,
   CheckCircle2,
-  RefreshCw,
-  Ruler,
   Zap,
-  Sliders,
-  Eye,
-  Layers,
   ArrowRight,
-  ShieldCheck,
-  User,
-  ShoppingBag
+  User
 } from 'lucide-react';
 import { useAuraStore } from '../../store/auraStore.js';
 import { aiTryonService, TryonGenerationResult } from '../../services/aiTryon.service.js';
@@ -69,16 +62,16 @@ export const GenerativeTryonStudio: React.FC = () => {
   const [isDraggingSlider, setIsDraggingSlider] = useState<boolean>(false);
   const splitContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // Tailoring adjustments
-  const [fitScale, setFitScale] = useState<number>(1.0);
-  const [verticalOffset, setVerticalOffset] = useState<number>(0);
+  // Tailoring — no longer needed for AI mode but kept for fallback
+  const fitScale = 1.0;
+  const verticalOffset = 0;
 
   // Automatically trigger try-on generation when either person photo or garment changes
   useEffect(() => {
     if (personPhotoUrl && activeGarment) {
       handleGenerateTryon();
     }
-  }, [personPhotoUrl, activeGarment, fitScale, verticalOffset, selectedSize]);
+  }, [personPhotoUrl, activeGarment, selectedSize]);
 
   const handlePersonUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -96,40 +89,46 @@ export const GenerativeTryonStudio: React.FC = () => {
     if (!personPhotoUrl || !activeGarment) return;
 
     setIsGenerating(true);
-    setGenerationProgress(15);
-    setProgressStage('Detecting anatomical keypoints & torso contours...');
+    setGenerationProgress(10);
+    setProgressStage('Uploading person photo & garment to Gemini AI...');
 
     try {
-      await new Promise((r) => setTimeout(r, 200));
-      setGenerationProgress(50);
-      setProgressStage('Applying elastic garment warping & seam alignment...');
+      await new Promise((r) => setTimeout(r, 300));
+      setGenerationProgress(30);
+      setProgressStage('AI is analyzing body shape, posture & proportions...');
 
       const garmentSource = activeGarment.vton_overlay_url || activeGarment.image_url;
 
-      await new Promise((r) => setTimeout(r, 250));
-      setGenerationProgress(80);
-      setProgressStage('Harmonizing illumination, skin contact & shadows...');
+      await new Promise((r) => setTimeout(r, 400));
+      setGenerationProgress(55);
+      setProgressStage('Gemini is re-drawing the person wearing the garment...');
 
       const result = await aiTryonService.synthesizeTryon(personPhotoUrl, garmentSource, {
-        fitScale,
-        verticalOffset,
+        garmentName: activeGarment.name,
+        garmentDescription: `${activeGarment.designer} ${activeGarment.category || ''} in ${activeGarment.color_hex || 'classic'} — ${(activeGarment.materials || []).join(', ') || 'premium fabric'}`,
         selectedSize
       });
 
       setTryonResult(result);
       setGenerationProgress(100);
-      setProgressStage('Photorealistic virtual try-on complete.');
+      setProgressStage(
+        result.isAiGenerated
+          ? 'AI photo editing complete — the person is now wearing the garment!'
+          : 'Canvas fallback used — configure GEMINI_API_KEY for AI generation.'
+      );
 
-      // Milanese Stylist critique
+      // AI Stylist commentary
       addMessage({
         id: `tryon-${Date.now()}`,
         sender: 'stylist',
-        text: `AI Virtual Try-On complete. "${activeGarment.name}" has been synthesized onto your portrait. The shoulder drape conforms to your measured 45cm span with zero lapel distortion.`,
+        text: result.isAiGenerated
+          ? `AI Virtual Try-On complete. Gemini has edited your photo to show you naturally wearing "${activeGarment.name}". ${result.stylingNotes}`
+          : `Try-on preview generated using canvas fallback. "${activeGarment.name}" has been overlaid on your portrait. For photorealistic AI editing, ensure the Gemini API key is configured.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         suggested_prompts: [
           'How does this look for an evening gala?',
           'What accessories pair with this ensemble?',
-          'Switch to an oversized drop-shoulder fit'
+          'Try a different garment on me'
         ]
       });
     } catch (err) {
@@ -264,7 +263,7 @@ export const GenerativeTryonStudio: React.FC = () => {
         {isGenerating && (
           <div className="absolute inset-0 z-40 bg-slate-950/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-fade-in">
             <Sparkles className="w-12 h-12 text-amber-400 animate-spin mb-4" style={{ animationDuration: '3s' }} />
-            <h3 className="text-base font-bold text-white mb-1">Synthesizing Neural Virtual Try-On</h3>
+            <h3 className="text-base font-bold text-white mb-1">Gemini AI is Editing Your Photo</h3>
             <p className="text-xs text-amber-300 font-mono mb-4">{progressStage}</p>
 
             <div className="w-full max-w-md h-2 bg-slate-800 rounded-full overflow-hidden border border-white/10">

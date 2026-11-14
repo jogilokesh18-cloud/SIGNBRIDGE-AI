@@ -12,6 +12,7 @@ import { catalogRouter } from './routes/catalog.routes.js';
 import { stylistRouter } from './routes/stylist.routes.js';
 import { commerceRouter } from './routes/commerce.routes.js';
 import { merchantRouter } from './routes/merchant.routes.js';
+import { tryonRouter } from './routes/tryon.routes.js';
 
 export const app = express();
 
@@ -44,8 +45,8 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 // Request body parsers
-app.use(express.json({ limit: '2mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
 // Structured HTTP Logging
 app.use(pinoHttp({
@@ -74,6 +75,7 @@ app.use('/api/v1/catalog', catalogRouter);
 app.use('/api/v1/stylist', stylistRouter);
 app.use('/api/v1/commerce', commerceRouter);
 app.use('/api/v1/merchant', merchantRouter);
+app.use('/api/v1/tryon', tryonRouter);
 
 // 404 Handler
 app.use('/api/*', (req, res) => {

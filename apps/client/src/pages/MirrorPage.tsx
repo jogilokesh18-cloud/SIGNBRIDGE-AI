@@ -36,7 +36,7 @@ export const MirrorPage: React.FC = () => {
             AI Virtual Try-On Studio
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Upload a person photo & product photo to synthesize photorealistic virtual try-on with elastic cloth warping.
+            Upload a person photo & product photo — AI will edit the person's photo to show them naturally wearing the product.
           </p>
         </div>
 

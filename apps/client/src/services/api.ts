@@ -80,5 +80,19 @@ export const api = {
 
   async getMerchantAnalytics(): Promise<MerchantAnalytics> {
     return fetchJson<MerchantAnalytics>(`${API_BASE}/merchant/analytics`);
+  },
+
+  async generateTryon(payload: {
+    personImageBase64: string;
+    personImageMimeType: string;
+    garmentImageBase64: string;
+    garmentImageMimeType: string;
+    garmentName?: string;
+    garmentDescription?: string;
+  }): Promise<{ resultImageBase64: string; resultMimeType: string; stylingNotes: string }> {
+    return fetchJson(`${API_BASE}/tryon/generate`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
   }
 };
