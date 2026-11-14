@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 600" width="500" height="600">
+  <!-- Balenciaga Cocoon Puffer Haute Couture Try-On Overlay -->
+  <defs>
+        <linearGradient id="pufferGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#64748b"/>
+          <stop offset="50%" stop-color="#475569"/>
+          <stop offset="100%" stop-color="#334155"/>
+        </linearGradient>
+      </defs>
+      <!-- Pillow Storm Collar -->
+      <ellipse cx="250" cy="65" rx="75" ry="30" fill="#334155" stroke="#94a3b8" stroke-width="2"/>
+      <!-- Volumetric Cocoon Silhouette with Horizontal Down Baffles -->
+      <path d="M 180,65 Q 80,95 30,150 L 50,330 L 110,470 Q 250,510 390,470 L 450,330 L 470,150 Q 420,95 320,65 Z" fill="url(#pufferGrad)"/>
+      <!-- Baffle Segments -->
+      <g stroke="#1e293b" stroke-width="3" opacity="0.6">
+        <path d="M 50,170 Q 250,210 450,170"/>
+        <path d="M 60,250 Q 250,290 440,250"/>
+        <path d="M 80,330 Q 250,370 420,330"/>
+        <path d="M 100,410 Q 250,440 400,410"/>
+      </g>
+</svg>

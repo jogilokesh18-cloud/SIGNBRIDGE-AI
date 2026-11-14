@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 600" width="500" height="600">
+  <!-- Rick Owens Draped Evening Gown Haute Couture Try-On Overlay -->
+  <defs>
+        <linearGradient id="rickGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#262626"/>
+          <stop offset="50%" stop-color="#171717"/>
+          <stop offset="100%" stop-color="#0a0a0a"/>
+        </linearGradient>
+      </defs>
+      <!-- Sculptural funnel cowl neck -->
+      <path d="M 210,40 Q 250,90 290,40 Q 270,110 210,40" fill="#404040"/>
+      <!-- Architectural Statuesque Silhouette -->
+      <path d="M 210,40 Q 150,70 120,110 L 150,300 L 180,450 L 150,560 Q 250,580 350,560 L 320,450 L 350,300 L 380,110 Q 350,70 290,40 Z" fill="url(#rickGrad)"/>
+      <!-- High side slit drape -->
+      <path d="M 320,380 L 350,560 L 310,560 Z" fill="#000000" opacity="0.6"/>
+      <!-- Washed lambskin leather panel lines -->
+      <path d="M 250,110 L 230,340 L 210,560" stroke="#525252" stroke-width="2" fill="none"/>
+      <path d="M 250,110 L 270,340 L 290,560" stroke="#525252" stroke-width="2" fill="none"/>
+</svg>

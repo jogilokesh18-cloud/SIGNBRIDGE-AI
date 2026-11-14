@@ -1,6 +1,22 @@
 import { BodyAnalysisResult, SkinUndertone, GarmentItem } from '@signbridge/shared-types';
 
 export class AuraVisionService {
+  private imageCache = new Map<string, HTMLImageElement>();
+
+  /**
+   * Preloads or retrieves cached garment image overlay
+   */
+  getGarmentOverlayImage(url: string): HTMLImageElement {
+    if (this.imageCache.has(url)) {
+      return this.imageCache.get(url)!;
+    }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = url;
+    this.imageCache.set(url, img);
+    return img;
+  }
+
   /**
    * Samples center facial/torso pixels from the live video feed or canvas
    * to determine skin undertone and ambient color temperature.
@@ -87,7 +103,7 @@ export class AuraVisionService {
       width * 0.5, height * 0.4, width * 0.1,
       width * 0.5, height * 0.5, width * 0.75
     );
-    bgGrad.addColorStop(0, '#131826');
+    bgGrad.addColorStop(0, '#151c2d');
     bgGrad.addColorStop(0.5, '#0b0f19');
     bgGrad.addColorStop(1, '#05070c');
     ctx.fillStyle = bgGrad;
@@ -99,9 +115,8 @@ export class AuraVisionService {
 
     const cx = width / 2 + sway;
     const headY = height * 0.22 + breath * 0.4;
-    const neckY = height * 0.30;
     const shoulderY = height * 0.35 + breath;
-    const shoulderHalfWidth = width * 0.17;
+    const shoulderHalfWidth = width * 0.18;
     const waistY = height * 0.62;
     const waistHalfWidth = shoulderHalfWidth * 0.72;
     const hipY = height * 0.78;
@@ -109,10 +124,10 @@ export class AuraVisionService {
 
     // Atmospheric studio rim light
     ctx.shadowColor = '#d4af37';
-    ctx.shadowBlur = 35;
+    ctx.shadowBlur = 30;
 
-    // Head silhouette
-    ctx.fillStyle = '#222938';
+    // Head silhouette with subtle facial posture guide
+    ctx.fillStyle = '#263042';
     ctx.beginPath();
     ctx.ellipse(cx, headY, width * 0.055, height * 0.08, 0, 0, Math.PI * 2);
     ctx.fill();
@@ -127,7 +142,6 @@ export class AuraVisionService {
     ctx.fill();
 
     // Torso silhouette
-    ctx.shadowBlur = 20;
     ctx.beginPath();
     ctx.moveTo(cx - shoulderHalfWidth, shoulderY);
     ctx.quadraticCurveTo(cx, shoulderY - 8, cx + shoulderHalfWidth, shoulderY);
@@ -161,7 +175,9 @@ export class AuraVisionService {
     width: number,
     height: number,
     garmentHex = '#d4af37',
-    timeSeconds = 0
+    timeSeconds = 0,
+    verticalOffset = 0,
+    scaleMultiplier = 1.0
   ) {
     ctx.save();
 
@@ -169,10 +185,10 @@ export class AuraVisionService {
     const sway = Math.sin(timeSeconds * 0.8) * 2;
 
     const cx = width / 2 + sway;
-    const shoulderY = height * 0.35 + breath;
-    const shoulderWidth = width * 0.34;
-    const chestY = height * 0.48;
-    const waistY = height * 0.62;
+    const shoulderY = (height * 0.35 + breath + verticalOffset);
+    const shoulderWidth = width * 0.36 * scaleMultiplier;
+    const chestY = shoulderY + height * 0.13 * scaleMultiplier;
+    const waistY = shoulderY + height * 0.27 * scaleMultiplier;
     const waistWidth = shoulderWidth * 0.74;
 
     // Glowing contour lines
@@ -191,7 +207,7 @@ export class AuraVisionService {
     ctx.stroke();
 
     // Cross-strut telemetry diagonals
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
     ctx.lineWidth = 1;
     ctx.shadowBlur = 0;
     ctx.beginPath();
@@ -209,13 +225,13 @@ export class AuraVisionService {
       { x: cx, y: chestY, label: 'Sternum' },
       { x: cx - waistWidth / 2, y: waistY, label: 'L-Waist' },
       { x: cx + waistWidth / 2, y: waistY, label: 'R-Waist' },
-      { x: cx - shoulderWidth * 0.62, y: chestY + 10, label: 'L-Elbow' },
-      { x: cx + shoulderWidth * 0.62, y: chestY + 10, label: 'R-Elbow' }
+      { x: cx - shoulderWidth * 0.58, y: chestY + 15, label: 'L-Arm' },
+      { x: cx + shoulderWidth * 0.58, y: chestY + 15, label: 'R-Arm' }
     ];
 
     nodes.forEach((n) => {
       ctx.beginPath();
-      ctx.arc(n.x, n.y, 3.5, 0, Math.PI * 2);
+      ctx.arc(n.x, n.y, 4, 0, Math.PI * 2);
       ctx.fillStyle = garmentHex;
       ctx.fill();
       ctx.strokeStyle = '#ffffff';
@@ -223,8 +239,8 @@ export class AuraVisionService {
       ctx.stroke();
 
       // Mini text label
-      ctx.font = '9px monospace';
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.font = 'bold 9px monospace';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
       ctx.fillText(n.label, n.x + 6, n.y - 3);
     });
 
@@ -232,7 +248,40 @@ export class AuraVisionService {
   }
 
   /**
-   * Renders high-fidelity generative virtual try-on couture garment
+   * Draws posture and alignment guide silhouette on the mirror
+   */
+  drawAlignmentGuide(ctx: CanvasRenderingContext2D, width: number, height: number) {
+    ctx.save();
+    const cx = width / 2;
+    const cy = height * 0.42;
+
+    ctx.strokeStyle = 'rgba(212, 175, 55, 0.25)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 6]);
+
+    // Head oval guide
+    ctx.beginPath();
+    ctx.ellipse(cx, height * 0.22, width * 0.06, height * 0.08, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Shoulder curve guide
+    ctx.beginPath();
+    ctx.moveTo(cx - width * 0.18, height * 0.35);
+    ctx.quadraticCurveTo(cx, height * 0.33, cx + width * 0.18, height * 0.35);
+    ctx.stroke();
+
+    // Guidance text
+    ctx.setLineDash([]);
+    ctx.font = '10px monospace';
+    ctx.fillStyle = 'rgba(212, 175, 55, 0.5)';
+    ctx.textAlign = 'center';
+    ctx.fillText('ALIGN SHOULDERS HERE', cx, height * 0.31);
+
+    ctx.restore();
+  }
+
+  /**
+   * Renders high-fidelity generative virtual try-on couture garment worn on the person
    */
   drawCoutureGarmentDrape(
     ctx: CanvasRenderingContext2D,
@@ -240,7 +289,10 @@ export class AuraVisionService {
     height: number,
     garment: GarmentItem,
     vtonMode: 'live_overlay' | 'silhouette' | 'minimal',
-    timeSeconds = 0
+    timeSeconds = 0,
+    scaleMultiplier = 1.0,
+    verticalOffset = 0,
+    opacity = 0.95
   ) {
     if (vtonMode === 'minimal') return;
 
@@ -248,90 +300,90 @@ export class AuraVisionService {
 
     const breath = Math.sin(timeSeconds * 1.8) * 3;
     const sway = Math.sin(timeSeconds * 0.8) * 2;
-    const wave = Math.sin(timeSeconds * 2.5) * 4;
+    const wave = Math.sin(timeSeconds * 2.5) * 3;
 
     const cx = width / 2 + sway;
-    const neckY = height * 0.30;
-    const shoulderY = height * 0.35 + breath;
-    const shoulderWidth = width * 0.35;
-    const chestY = height * 0.48;
-    const waistY = height * 0.62;
+    const baseHex = garment.color_hex || '#0b0f19';
+
+    // Check if high-res SVG overlay is available
+    if (vtonMode === 'live_overlay' && garment.vton_overlay_url) {
+      const img = this.getGarmentOverlayImage(garment.vton_overlay_url);
+      if (img.complete && img.naturalWidth > 0) {
+        // Compute destination bounds centered on the person's torso
+        const gWidth = width * 0.56 * scaleMultiplier;
+        const gHeight = gWidth * (600 / 500); // 500x600 aspect ratio of overlays
+        const topY = height * 0.26 + breath + verticalOffset;
+        const destX = cx - gWidth / 2;
+
+        ctx.globalAlpha = opacity;
+        ctx.shadowColor = baseHex;
+        ctx.shadowBlur = 25;
+
+        // Draw the photorealistic couture garment onto the body!
+        ctx.drawImage(img, destX, topY, gWidth, gHeight);
+
+        // Subtle specular highlight line down lapel
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(cx - gWidth * 0.08, topY + gHeight * 0.15);
+        ctx.lineTo(cx - gWidth * 0.02, topY + gHeight * 0.45);
+        ctx.stroke();
+
+        ctx.restore();
+        return;
+      }
+    }
+
+    // Procedural Fallback if image still loading or in 'silhouette' mode
+    const neckY = height * 0.29 + verticalOffset;
+    const shoulderY = height * 0.35 + breath + verticalOffset;
+    const shoulderWidth = width * 0.36 * scaleMultiplier;
+    const chestY = height * 0.48 + verticalOffset;
+    const waistY = height * 0.62 + verticalOffset;
     const waistWidth = shoulderWidth * 0.74;
-    const hemY = garment.category === 'evening_wear'
-      ? height * 0.88
-      : height * 0.72;
+    const hemY = (garment.category === 'evening_wear' ? height * 0.88 : height * 0.72) + verticalOffset;
     const hemWidth = garment.category === 'evening_wear'
       ? shoulderWidth * 1.15 + wave
       : shoulderWidth * 0.82;
 
-    const baseHex = garment.color_hex || '#0b0f19';
-
-    // Outer fabric halo / specular glow
+    ctx.globalAlpha = opacity;
     ctx.shadowColor = baseHex;
     ctx.shadowBlur = 28;
 
-    // Multi-stop volumetric fabric gradient
     const fabricGrad = ctx.createLinearGradient(cx, shoulderY, cx, hemY);
-    fabricGrad.addColorStop(0, `${baseHex}f0`);
-    fabricGrad.addColorStop(0.3, `${baseHex}d8`);
-    fabricGrad.addColorStop(0.7, `${baseHex}b8`);
-    fabricGrad.addColorStop(1, `${baseHex}70`);
+    fabricGrad.addColorStop(0, `${baseHex}f5`);
+    fabricGrad.addColorStop(0.3, `${baseHex}e0`);
+    fabricGrad.addColorStop(0.7, `${baseHex}c0`);
+    fabricGrad.addColorStop(1, `${baseHex}80`);
 
     ctx.fillStyle = fabricGrad;
     ctx.beginPath();
-
-    // Sculpted neckline
     ctx.moveTo(cx - width * 0.04, neckY);
     ctx.lineTo(cx + width * 0.04, neckY);
-
-    // Right shoulder drop
     ctx.quadraticCurveTo(cx + shoulderWidth * 0.35, shoulderY - 6, cx + shoulderWidth * 0.52, shoulderY);
-
-    // Right armhole & torso taper
     ctx.lineTo(cx + waistWidth * 0.52, waistY);
-
-    // Right flank to hem
     ctx.lineTo(cx + hemWidth * 0.5, hemY);
-
-    // Hemline curve
     ctx.quadraticCurveTo(cx, hemY + 12, cx - hemWidth * 0.5, hemY);
-
-    // Left flank & waist taper
     ctx.lineTo(cx - waistWidth * 0.52, waistY);
-
-    // Left armhole to left shoulder
     ctx.lineTo(cx - shoulderWidth * 0.52, shoulderY);
     ctx.quadraticCurveTo(cx - shoulderWidth * 0.35, shoulderY - 6, cx - width * 0.04, neckY);
-
     ctx.closePath();
     ctx.fill();
 
-    // Tailored Lapel / Placket Structure
-    ctx.shadowBlur = 6;
+    // Lapel & buttons
     ctx.strokeStyle = '#fde68a';
     ctx.lineWidth = 1.8;
-
     ctx.beginPath();
-    // Left Peaked Lapel
     ctx.moveTo(cx - width * 0.04, neckY);
     ctx.lineTo(cx - shoulderWidth * 0.22, chestY * 0.88);
     ctx.lineTo(cx, waistY * 0.95);
-
-    // Right Peaked Lapel
     ctx.moveTo(cx + width * 0.04, neckY);
     ctx.lineTo(cx + shoulderWidth * 0.22, chestY * 0.88);
     ctx.lineTo(cx, waistY * 0.95);
     ctx.stroke();
 
-    // Center button line
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(cx, waistY * 0.95);
-    ctx.lineTo(cx, hemY - 10);
-    ctx.stroke();
-
-    // Horn / Mother-of-pearl button studs
     for (let i = 0; i < 3; i++) {
       const by = waistY + (i * 22);
       ctx.beginPath();
@@ -339,12 +391,6 @@ export class AuraVisionService {
       ctx.fillStyle = '#fef08a';
       ctx.fill();
     }
-
-    // Designer Monogram Crest on chest
-    ctx.shadowBlur = 0;
-    ctx.font = 'bold 8px sans-serif';
-    ctx.fillStyle = 'rgba(254, 240, 138, 0.7)';
-    ctx.fillText('AURA ATELIER', cx - shoulderWidth * 0.32, chestY * 0.85);
 
     ctx.restore();
   }

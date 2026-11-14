@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 600" width="500" height="600">
+  <!-- Jacquemus Riviera Linen Shirt Haute Couture Try-On Overlay -->
+  <defs>
+        <linearGradient id="linGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#fffbeb"/>
+          <stop offset="50%" stop-color="#fef3c7"/>
+          <stop offset="100%" stop-color="#fde68a"/>
+        </linearGradient>
+      </defs>
+      <!-- Open Relaxed Camp Collar -->
+      <polygon points="190,70 230,140 250,110 270,140 310,70 250,85" fill="#fef3c7" stroke="#d97706" stroke-width="1"/>
+      <!-- Relaxed Boxy Shirt Body -->
+      <path d="M 190,70 Q 110,85 60,130 L 90,330 L 140,460 L 360,460 L 410,330 L 440,130 Q 390,85 310,70 Z" fill="url(#linGrad)"/>
+      <!-- Mother of Pearl buttons -->
+      <circle cx="250" cy="180" r="5" fill="#ffffff" stroke="#d97706" stroke-width="1"/>
+      <circle cx="250" cy="240" r="5" fill="#ffffff" stroke="#d97706" stroke-width="1"/>
+      <circle cx="250" cy="300" r="5" fill="#ffffff" stroke="#d97706" stroke-width="1"/>
+      <circle cx="250" cy="360" r="5" fill="#ffffff" stroke="#d97706" stroke-width="1"/>
+</svg>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 600" width="500" height="600">
+  <!-- Visvim Raw Indigo Chore Kimono Haute Couture Try-On Overlay -->
+  <defs>
+        <linearGradient id="indigoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#1e3a8a"/>
+          <stop offset="50%" stop-color="#172554"/>
+          <stop offset="100%" stop-color="#0f172a"/>
+        </linearGradient>
+      </defs>
+      <!-- Wide kimono collar band -->
+      <polygon points="170,70 210,70 310,320 280,320" fill="#1e40af"/>
+      <polygon points="330,70 290,70 190,320 220,320" fill="#1e3a8a"/>
+      <!-- Kimono Body & Wide Sleeves -->
+      <path d="M 170,70 Q 90,85 30,130 L 60,320 L 130,470 L 370,470 L 440,320 L 470,130 Q 410,85 330,70 Z" fill="url(#indigoGrad)"/>
+      <!-- Sashiko white hand-stitched reinforcement dots -->
+      <g stroke="#ffffff" stroke-width="2" stroke-dasharray="3,4" opacity="0.75">
+        <line x1="160" y1="120" x2="200" y2="120"/>
+        <line x1="160" y1="130" x2="200" y2="130"/>
+        <line x1="300" y1="120" x2="340" y2="120"/>
+        <line x1="300" y1="130" x2="340" y2="130"/>
+      </g>
+</svg>

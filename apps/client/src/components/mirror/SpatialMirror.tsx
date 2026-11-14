@@ -11,7 +11,11 @@ import {
   Sliders,
   CheckCircle2,
   Video,
-  Eye
+  Eye,
+  MoveVertical,
+  Maximize2,
+  Minimize2,
+  Crosshair
 } from 'lucide-react';
 import { useAuraStore } from '../../store/auraStore.js';
 import { auraVisionService } from '../../services/vision.service.js';
@@ -25,10 +29,17 @@ export const SpatialMirror: React.FC = () => {
 
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [showMesh, setShowMesh] = useState<boolean>(true);
+  const [showGuide, setShowGuide] = useState<boolean>(false);
+  const [showControls, setShowControls] = useState<boolean>(false);
   const [availableDevices, setAvailableDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
   const [isInitializing, setIsInitializing] = useState<boolean>(false);
   const [cameraErrorNotice, setCameraErrorNotice] = useState<string | null>(null);
+
+  // Person-fit adjustment states
+  const [fitScale, setFitScale] = useState<number>(1.0);
+  const [verticalOffset, setVerticalOffset] = useState<number>(0);
+  const [garmentOpacity, setGarmentOpacity] = useState<number>(0.95);
 
   const {
     isCameraActive,
@@ -40,6 +51,8 @@ export const SpatialMirror: React.FC = () => {
     activeGarment,
     vtonMode,
     setVtonMode,
+    selectedSize,
+    setSelectedSize,
     setCheckoutModalOpen
   } = useAuraStore();
 
@@ -62,7 +75,28 @@ export const SpatialMirror: React.FC = () => {
     getDevices();
   }, []);
 
-  // Handle stream initialization or switch
+  // Preload active garment overlay
+  useEffect(() => {
+    if (activeGarment?.vton_overlay_url) {
+      auraVisionService.getGarmentOverlayImage(activeGarment.vton_overlay_url);
+    }
+  }, [activeGarment]);
+
+  // Adjust scale automatically when size changes
+  useEffect(() => {
+    const scaleMap: Record<string, number> = {
+      XS: 0.88,
+      S: 0.94,
+      M: 1.0,
+      L: 1.08,
+      XL: 1.16
+    };
+    if (scaleMap[selectedSize]) {
+      setFitScale(scaleMap[selectedSize]);
+    }
+  }, [selectedSize]);
+
+  // Handle stream initialization or source switch
   useEffect(() => {
     if (mirrorSource === 'camera') {
       startCamera(selectedDeviceId);
@@ -83,35 +117,30 @@ export const SpatialMirror: React.FC = () => {
     setIsInitializing(true);
     setCameraErrorNotice(null);
 
-    // Stop existing tracks first
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
 
     const tiers: MediaStreamConstraints[] = [
-      // Tier 1: Ideal 720p with facingMode or deviceId
       {
         video: deviceId
           ? { deviceId: { exact: deviceId } }
           : { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
         audio: false
       },
-      // Tier 2: Flexible resolution
       {
         video: deviceId
           ? { deviceId: { exact: deviceId } }
           : { width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false
       },
-      // Tier 3: Standard 480p
       {
         video: deviceId
           ? { deviceId: { exact: deviceId } }
           : { width: { ideal: 640 }, height: { ideal: 480 } },
         audio: false
       },
-      // Tier 4: Minimal constraint fallback
       {
         video: true,
         audio: false
@@ -153,7 +182,6 @@ export const SpatialMirror: React.FC = () => {
           ? 'Camera permission was denied. Switched to Studio Avatar Mode.'
           : 'Camera is busy or disconnected. Switched to Studio Avatar Mode.'
       );
-      // Auto-fallback to Studio Avatar Simulation Mode
       setMirrorSource('studio_avatar');
       startRenderLoop();
     }
@@ -187,7 +215,6 @@ export const SpatialMirror: React.FC = () => {
         if (ctx) {
           const isStudio = mirrorSource === 'studio_avatar';
 
-          // Ensure canvas sizing
           if (isStudio) {
             if (canvas.width !== 1280 || canvas.height !== 720) {
               canvas.width = 1280;
@@ -205,13 +232,13 @@ export const SpatialMirror: React.FC = () => {
 
           ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-          // In Studio Avatar Mode, render synthetic studio backdrop & model
+          // In Studio Avatar Mode, draw realistic studio model & background
           if (isStudio) {
             auraVisionService.drawStudioModel(ctx, canvas.width, canvas.height, timeSeconds);
           }
 
+          // Periodic colorimetry update (~1.5s)
           frameCount++;
-          // Periodic colorimetry update every ~90 frames (1.5s)
           if (frameCount % 90 === 0) {
             const metrics = auraVisionService.sampleColorimetry(
               isStudio || !video ? canvas : video
@@ -226,7 +253,12 @@ export const SpatialMirror: React.FC = () => {
             }
           }
 
-          // Render Couture Garment Drape
+          // Optional Alignment Guide Silhouette
+          if (showGuide) {
+            auraVisionService.drawAlignmentGuide(ctx, canvas.width, canvas.height);
+          }
+
+          // Render Haute Couture Garment Worn on Person
           if (activeGarment) {
             auraVisionService.drawCoutureGarmentDrape(
               ctx,
@@ -234,18 +266,23 @@ export const SpatialMirror: React.FC = () => {
               canvas.height,
               activeGarment,
               vtonMode,
-              timeSeconds
+              timeSeconds,
+              fitScale,
+              verticalOffset,
+              garmentOpacity
             );
           }
 
-          // Render Holographic Mesh & Telemetry
+          // Render 3D Holographic Mesh & Landmarks
           if (showMesh) {
             auraVisionService.drawHolographicMesh(
               ctx,
               canvas.width,
               canvas.height,
               activeGarment ? activeGarment.color_hex : '#d4af37',
-              timeSeconds
+              timeSeconds,
+              verticalOffset,
+              fitScale
             );
           }
         }
@@ -259,25 +296,29 @@ export const SpatialMirror: React.FC = () => {
 
   return (
     <div className="relative w-full aspect-[4/3] sm:aspect-video rounded-3xl overflow-hidden bg-slate-950 border border-amber-500/20 shadow-2xl shadow-amber-500/10 flex items-center justify-center">
-      {/* Live Video Element (active in camera mode) */}
+      {/* Live Video Feed */}
       <video
         ref={videoRef}
         playsInline
         muted
         autoPlay
-        className={`w-full h-full object-cover -scale-x-100 ${mirrorSource === 'camera' && isCameraActive ? 'block' : 'hidden'}`}
+        className={`w-full h-full object-cover -scale-x-100 ${
+          mirrorSource === 'camera' && isCameraActive ? 'block' : 'hidden'
+        }`}
       />
 
-      {/* AR Rendering Canvas Overlay */}
+      {/* AR Garment Canvas */}
       <canvas
         ref={canvasRef}
-        className={`absolute inset-0 w-full h-full object-cover pointer-events-none ${mirrorSource === 'camera' ? '-scale-x-100' : ''}`}
+        className={`absolute inset-0 w-full h-full object-cover pointer-events-none ${
+          mirrorSource === 'camera' ? '-scale-x-100' : ''
+        }`}
       />
 
-      {/* Top Left: Spatial Telemetry Badge & Mode Switcher */}
+      {/* Top Left: Telemetry & Mode Selector */}
       <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/75 backdrop-blur-md border border-white/10 text-white text-xs font-semibold shadow-lg">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/10 text-white text-xs font-semibold shadow-lg">
             <span
               className={`w-2.5 h-2.5 rounded-full ${
                 mirrorSource === 'camera' && isCameraActive
@@ -287,12 +328,11 @@ export const SpatialMirror: React.FC = () => {
             />
             <span className="tracking-wide">
               {mirrorSource === 'camera' && isCameraActive
-                ? 'LIVE WEBCAM: 60 FPS'
+                ? 'WEBCAM VTON: 60 FPS'
                 : 'STUDIO AVATAR SIMULATION'}
             </span>
           </div>
 
-          {/* Quick Source Toggle Button */}
           <button
             onClick={() => {
               if (mirrorSource === 'camera') {
@@ -307,30 +347,27 @@ export const SpatialMirror: React.FC = () => {
             {mirrorSource === 'camera' ? (
               <>
                 <User className="w-3.5 h-3.5" />
-                <span>Switch to Studio Avatar</span>
+                <span>Studio Avatar Mode</span>
               </>
             ) : (
               <>
                 <Camera className="w-3.5 h-3.5" />
-                <span>Switch to Live Camera</span>
+                <span>Live Webcam Mode</span>
               </>
             )}
           </button>
         </div>
 
-        {/* Biometric Fit Confidence Pill */}
+        {/* Live Size & Undertone Pill */}
         {bodyScan && (
-          <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-black/75 backdrop-blur-md border border-amber-400/30 text-[11px] text-amber-200 shadow-md">
+          <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-black/80 backdrop-blur-md border border-amber-400/30 text-[11px] text-amber-200 shadow-md">
             <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
             <span>
-              Size Match:{' '}
-              <strong className="text-white font-bold">{bodyScan.estimated_size}</strong>{' '}
-              ({Math.round(bodyScan.confidence * 100)}% Fit Confidence) • {bodyScan.skin_undertone.replace('_', ' ')}
+              Size: <strong className="text-white font-bold">{selectedSize}</strong> ({Math.round(bodyScan.confidence * 100)}% Fit) • {bodyScan.skin_undertone.replace('_', ' ')}
             </span>
           </div>
         )}
 
-        {/* Notice badge if fallback happened */}
         {cameraErrorNotice && mirrorSource === 'studio_avatar' && (
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[10px] text-amber-300">
             <span>ℹ️ {cameraErrorNotice}</span>
@@ -338,37 +375,48 @@ export const SpatialMirror: React.FC = () => {
         )}
       </div>
 
-      {/* Top Right: Mesh & Try-on Controls */}
+      {/* Top Right: Controls */}
       <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
-        {/* Camera Selector (if multiple devices available) */}
-        {availableDevices.length > 1 && mirrorSource === 'camera' && (
-          <select
-            value={selectedDeviceId}
-            onChange={(e) => setSelectedDeviceId(e.target.value)}
-            className="px-2.5 py-1.5 rounded-xl bg-black/75 backdrop-blur-md border border-white/20 text-xs text-slate-200 outline-none focus:border-amber-400"
-          >
-            {availableDevices.map((dev, idx) => (
-              <option key={dev.deviceId || idx} value={dev.deviceId} className="bg-slate-900 text-white">
-                {dev.label || `Camera ${idx + 1}`}
-              </option>
-            ))}
-          </select>
-        )}
+        {/* Toggle Custom Fit Adjustments */}
+        <button
+          onClick={() => setShowControls(!showControls)}
+          className={`p-2.5 rounded-xl backdrop-blur-md border transition-all ${
+            showControls
+              ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-lg'
+              : 'bg-black/70 text-slate-300 border-white/10 hover:text-white'
+          }`}
+          title="Adjust Garment Fit & Placement"
+        >
+          <Sliders className="w-4 h-4" />
+        </button>
 
-        {/* 3D Mesh Toggle */}
+        {/* Toggle Alignment Guide */}
+        <button
+          onClick={() => setShowGuide(!showGuide)}
+          className={`p-2.5 rounded-xl backdrop-blur-md border transition-all ${
+            showGuide
+              ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-lg'
+              : 'bg-black/70 text-slate-300 border-white/10 hover:text-white'
+          }`}
+          title="Toggle Shoulder Alignment Guide"
+        >
+          <Crosshair className="w-4 h-4" />
+        </button>
+
+        {/* Toggle 3D Skeleton Mesh */}
         <button
           onClick={() => setShowMesh(!showMesh)}
           className={`p-2.5 rounded-xl backdrop-blur-md border transition-all ${
             showMesh
               ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-lg'
-              : 'bg-black/60 text-slate-300 border-white/10 hover:text-white'
+              : 'bg-black/70 text-slate-300 border-white/10 hover:text-white'
           }`}
           title="Toggle 3D Skeleton Wireframe"
         >
           <Layers className="w-4 h-4" />
         </button>
 
-        {/* Try-On Display Mode Cycle */}
+        {/* VTON Mode Selector */}
         <button
           onClick={() => {
             const modes: Array<'live_overlay' | 'silhouette' | 'minimal'> = [
@@ -379,13 +427,85 @@ export const SpatialMirror: React.FC = () => {
             const nextIdx = (modes.indexOf(vtonMode) + 1) % modes.length;
             setVtonMode(modes[nextIdx]);
           }}
-          className="px-3 py-2 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 text-xs font-semibold text-white hover:border-amber-400/40 transition-colors flex items-center gap-1.5"
+          className="px-3 py-2 rounded-xl bg-black/70 backdrop-blur-md border border-white/10 text-xs font-semibold text-white hover:border-amber-400/40 transition-colors flex items-center gap-1.5"
           title="Cycle virtual try-on render mode"
         >
           <Sparkles className="w-3.5 h-3.5 text-amber-400" />
           <span className="capitalize">{vtonMode.replace('_', ' ')}</span>
         </button>
       </div>
+
+      {/* Floating Fit & Calibration Panel (Expandable) */}
+      {showControls && (
+        <div className="absolute top-16 right-4 z-30 w-64 p-3.5 rounded-2xl bg-black/90 backdrop-blur-xl border border-amber-400/30 shadow-2xl text-white space-y-3 animate-fade-in text-xs">
+          <div className="flex items-center justify-between pb-1 border-b border-white/10">
+            <span className="font-bold text-amber-300 uppercase tracking-wider text-[11px]">
+              Garment Fit & Warping
+            </span>
+            <button
+              onClick={() => {
+                setFitScale(1.0);
+                setVerticalOffset(0);
+                setGarmentOpacity(0.95);
+              }}
+              className="text-[10px] text-slate-400 hover:text-amber-300"
+            >
+              Reset
+            </button>
+          </div>
+
+          {/* Garment Scale */}
+          <div>
+            <div className="flex justify-between text-[11px] text-slate-300 mb-1">
+              <span>Shoulder Span:</span>
+              <span className="font-mono text-amber-400">{Math.round(fitScale * 100)}%</span>
+            </div>
+            <input
+              type="range"
+              min="0.80"
+              max="1.30"
+              step="0.02"
+              value={fitScale}
+              onChange={(e) => setFitScale(parseFloat(e.target.value))}
+              className="w-full accent-amber-400 cursor-pointer"
+            />
+          </div>
+
+          {/* Vertical Alignment */}
+          <div>
+            <div className="flex justify-between text-[11px] text-slate-300 mb-1">
+              <span>Collar Height:</span>
+              <span className="font-mono text-amber-400">{verticalOffset}px</span>
+            </div>
+            <input
+              type="range"
+              min="-60"
+              max="60"
+              step="2"
+              value={verticalOffset}
+              onChange={(e) => setVerticalOffset(parseInt(e.target.value, 10))}
+              className="w-full accent-amber-400 cursor-pointer"
+            />
+          </div>
+
+          {/* Opacity */}
+          <div>
+            <div className="flex justify-between text-[11px] text-slate-300 mb-1">
+              <span>Drape Opacity:</span>
+              <span className="font-mono text-amber-400">{Math.round(garmentOpacity * 100)}%</span>
+            </div>
+            <input
+              type="range"
+              min="0.30"
+              max="1.0"
+              step="0.05"
+              value={garmentOpacity}
+              onChange={(e) => setGarmentOpacity(parseFloat(e.target.value))}
+              className="w-full accent-amber-400 cursor-pointer"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Bottom Bar: Active Draped Couture Pill & Instant Order */}
       {activeGarment && (
@@ -409,7 +529,24 @@ export const SpatialMirror: React.FC = () => {
             </div>
           </div>
 
+          {/* Size Selectors & Order Button */}
           <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
+              {['XS', 'S', 'M', 'L', 'XL'].map((size) => (
+                <button
+                  key={size}
+                  onClick={() => setSelectedSize(size)}
+                  className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${
+                    selectedSize === size
+                      ? 'bg-amber-400 text-slate-950 font-black shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+
             <button
               onClick={() => setCheckoutModalOpen(true)}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-300 hover:from-amber-400 hover:to-yellow-200 text-slate-950 font-bold text-xs tracking-wider uppercase transition-all shadow-lg shadow-amber-500/20 active:scale-95"

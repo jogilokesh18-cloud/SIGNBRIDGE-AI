@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 600" width="500" height="600">
+  <!-- Tom Ford Bordeaux Smoking Jacket Haute Couture Try-On Overlay -->
+  <defs>
+        <linearGradient id="smokGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#701a75"/>
+          <stop offset="50%" stop-color="#581c87"/>
+          <stop offset="100%" stop-color="#3b0764"/>
+        </linearGradient>
+      </defs>
+      <!-- White formal dress shirt notch -->
+      <polygon points="220,70 280,70 260,180 240,180" fill="#f8fafc"/>
+      <polygon points="242,95 258,95 250,110" fill="#0b0f19"/>
+      <!-- Bordeaux Velvet Body -->
+      <path d="M 210,70 Q 130,85 70,120 L 95,300 L 190,440 L 250,440 L 250,220 Z" fill="url(#smokGrad)"/>
+      <path d="M 290,70 Q 370,85 430,120 L 405,300 L 310,440 L 250,440 L 250,220 Z" fill="url(#smokGrad)"/>
+      <!-- Black Silk Shawl Collar -->
+      <path d="M 210,70 Q 160,150 250,240 Q 340,150 290,70 Z" fill="#0b0f19" stroke="#d4af37" stroke-width="1"/>
+      <!-- Horn Link Closure Button -->
+      <circle cx="250" cy="265" r="7" fill="#451a03" stroke="#d4af37" stroke-width="1.5"/>
+</svg>
