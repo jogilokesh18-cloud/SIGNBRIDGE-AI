@@ -22,6 +22,18 @@ catalogRouter.get('/', async (req, res, next) => {
   }
 });
 
+catalogRouter.post('/upload', async (req, res, next) => {
+  try {
+    const item = await dbRepository.addCustomGarment(req.body);
+    res.status(201).json({
+      success: true,
+      data: item
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 catalogRouter.get('/:id', async (req, res, next) => {
   try {
     const item = await dbRepository.getGarmentById(req.params.id);

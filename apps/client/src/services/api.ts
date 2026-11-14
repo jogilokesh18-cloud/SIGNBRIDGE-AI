@@ -40,6 +40,13 @@ export const api = {
     return fetchJson<GarmentItem>(`${API_BASE}/catalog/${id}`);
   },
 
+  async uploadCustomGarment(payload: Partial<GarmentItem>): Promise<GarmentItem> {
+    return fetchJson<GarmentItem>(`${API_BASE}/catalog/upload`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
   async consultStylist(payload: {
     user_prompt: string;
     conversation_history?: Array<{ role: 'user' | 'stylist'; content: string }>;

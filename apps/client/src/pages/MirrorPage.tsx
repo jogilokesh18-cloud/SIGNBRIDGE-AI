@@ -3,6 +3,7 @@ import { SpatialMirror } from '../components/mirror/SpatialMirror.js';
 import { StylistHUD } from '../components/mirror/StylistHUD.js';
 import { GarmentSelector } from '../components/mirror/GarmentSelector.js';
 import { CheckoutModal } from '../components/commerce/CheckoutModal.js';
+import { UploadGarmentModal } from '../components/commerce/UploadGarmentModal.js';
 import { useAuraStore } from '../store/auraStore.js';
 import { api } from '../services/api.js';
 
@@ -58,8 +59,9 @@ export const MirrorPage: React.FC = () => {
         <GarmentSelector />
       </div>
 
-      {/* Checkout Modal */}
+      {/* Checkout & Upload Modals */}
       <CheckoutModal />
+      <UploadGarmentModal />
     </div>
   );
 };

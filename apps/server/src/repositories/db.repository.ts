@@ -65,6 +65,31 @@ class AuraDbRepository {
     return item || null;
   }
 
+  async addCustomGarment(item: Partial<GarmentItem>): Promise<GarmentItem> {
+    const newGarment: GarmentItem = {
+      id: item.id || `custom-${Date.now().toString(36)}`,
+      name: item.name || 'Custom Bespoke Silhouette',
+      designer: item.designer || 'Client Atelier Upload',
+      price: item.price || 1450,
+      currency: item.currency || 'USD',
+      category: item.category || 'formalwear',
+      aesthetic_vibe: item.aesthetic_vibe || 'quiet_luxury',
+      description: item.description || 'Client-uploaded garment custom mapped to live biometric body geometry.',
+      materials: item.materials?.length ? item.materials : ['Bespoke Custom Fabric Spec'],
+      image_url: item.image_url || 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=800&q=80',
+      vton_overlay_url: item.vton_overlay_url || item.image_url || '',
+      color_hex: item.color_hex || '#0b0f19',
+      available_sizes: item.available_sizes?.length ? item.available_sizes : ['XS', 'S', 'M', 'L', 'XL'],
+      fit_score: item.fit_score || 96,
+      match_reason: item.match_reason || 'Custom uploaded piece dynamically draped over upper torso posture.',
+      in_stock: true,
+      featured: true
+    };
+    this.inMemoryGarments.unshift(newGarment);
+    logger.info({ id: newGarment.id, name: newGarment.name }, 'Custom garment uploaded');
+    return newGarment;
+  }
+
   async recordBodyScan(scan: BodyAnalysisResult): Promise<BodyAnalysisResult> {
     this.inMemoryScans.push(scan);
     logger.info({ size: scan.estimated_size, silhouette: scan.silhouette }, '3D body scan registered');

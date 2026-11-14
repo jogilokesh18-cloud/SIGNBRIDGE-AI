@@ -305,9 +305,10 @@ export class AuraVisionService {
     const cx = width / 2 + sway;
     const baseHex = garment.color_hex || '#0b0f19';
 
-    // Check if high-res SVG overlay is available
-    if (vtonMode === 'live_overlay' && garment.vton_overlay_url) {
-      const img = this.getGarmentOverlayImage(garment.vton_overlay_url);
+    // Check if high-res SVG overlay or custom uploaded image is available
+    const overlayUrl = garment.vton_overlay_url || garment.image_url;
+    if (vtonMode === 'live_overlay' && overlayUrl) {
+      const img = this.getGarmentOverlayImage(overlayUrl);
       if (img.complete && img.naturalWidth > 0) {
         // Compute destination bounds centered on the person's torso
         const gWidth = width * 0.56 * scaleMultiplier;
@@ -315,12 +316,47 @@ export class AuraVisionService {
         const topY = height * 0.26 + breath + verticalOffset;
         const destX = cx - gWidth / 2;
 
+        const isSvg = overlayUrl.endsWith('.svg');
+
         ctx.globalAlpha = opacity;
         ctx.shadowColor = baseHex;
         ctx.shadowBlur = 25;
 
-        // Draw the photorealistic couture garment onto the body!
-        ctx.drawImage(img, destX, topY, gWidth, gHeight);
+        if (isSvg) {
+          // Transparent SVG overlay draws directly
+          ctx.drawImage(img, destX, topY, gWidth, gHeight);
+        } else {
+          // Custom uploaded image: Contour-clip to the person's anatomical silhouette
+          const neckY = height * 0.29 + verticalOffset;
+          const shoulderY = height * 0.35 + breath + verticalOffset;
+          const shoulderWidth = width * 0.38 * scaleMultiplier;
+          const waistY = height * 0.64 + verticalOffset;
+          const waistWidth = shoulderWidth * 0.76;
+          const hemY = height * 0.75 + verticalOffset;
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(cx - width * 0.04, neckY);
+          ctx.lineTo(cx + width * 0.04, neckY);
+          ctx.quadraticCurveTo(cx + shoulderWidth * 0.35, shoulderY - 6, cx + shoulderWidth * 0.52, shoulderY);
+          ctx.lineTo(cx + waistWidth * 0.52, waistY);
+          ctx.lineTo(cx + shoulderWidth * 0.42, hemY);
+          ctx.quadraticCurveTo(cx, hemY + 14, cx - shoulderWidth * 0.42, hemY);
+          ctx.lineTo(cx - waistWidth * 0.52, waistY);
+          ctx.lineTo(cx - shoulderWidth * 0.52, shoulderY);
+          ctx.quadraticCurveTo(cx - shoulderWidth * 0.35, shoulderY - 6, cx - width * 0.04, neckY);
+          ctx.closePath();
+          ctx.clip();
+
+          // Render uploaded photo draped to body dimensions
+          ctx.drawImage(img, destX, topY, gWidth, gHeight);
+          ctx.restore();
+
+          // Outer contour gold stitching
+          ctx.strokeStyle = '#fde68a';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
 
         // Subtle specular highlight line down lapel
         ctx.shadowBlur = 0;

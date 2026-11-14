@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { GarmentItem } from '@signbridge/shared-types';
 import { useAuraStore } from '../../store/auraStore.js';
-import { Check, Sparkles, Filter } from 'lucide-react';
+import { Check, Sparkles, Filter, Upload } from 'lucide-react';
 
 export const GarmentSelector: React.FC = () => {
-  const { catalog, activeGarment, setActiveGarment } = useAuraStore();
+  const { catalog, activeGarment, setActiveGarment, setUploadModalOpen } = useAuraStore();
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
 
   const categories = [
@@ -33,8 +33,16 @@ export const GarmentSelector: React.FC = () => {
           </span>
         </div>
 
-        {/* Category Filter Pills */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+        {/* Category Filter Pills & Upload Button */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+          <button
+            onClick={() => setUploadModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-[11px] uppercase tracking-wider transition-all shadow-md active:scale-95 whitespace-nowrap mr-1"
+          >
+            <Upload className="w-3.5 h-3.5 stroke-[2.5]" />
+            <span>Upload Piece</span>
+          </button>
+
           {categories.map((cat) => (
             <button
               key={cat.id}

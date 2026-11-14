@@ -294,6 +294,7 @@ interface AuraState {
   orders: OrderRecord[];
   merchantAnalytics: MerchantAnalytics | null;
   checkoutModalOpen: boolean;
+  uploadModalOpen: boolean;
   activeVibe: AestheticVibe;
 
   setCameraActive: (active: boolean) => void;
@@ -302,6 +303,7 @@ interface AuraState {
   setBodyScan: (scan: BodyAnalysisResult) => void;
   setActiveGarment: (garment: GarmentItem | null) => void;
   setCatalog: (catalog: GarmentItem[]) => void;
+  addGarment: (garment: GarmentItem) => void;
   setSelectedSize: (size: string) => void;
   setVtonMode: (mode: 'live_overlay' | 'silhouette' | 'minimal') => void;
   setAudioStreaming: (streaming: boolean) => void;
@@ -312,6 +314,7 @@ interface AuraState {
   addOrder: (order: OrderRecord) => void;
   setMerchantAnalytics: (analytics: MerchantAnalytics) => void;
   setCheckoutModalOpen: (open: boolean) => void;
+  setUploadModalOpen: (open: boolean) => void;
   setActiveVibe: (vibe: AestheticVibe) => void;
 }
 
@@ -358,6 +361,7 @@ export const useAuraStore = create<AuraState>((set) => ({
   orders: [],
   merchantAnalytics: null,
   checkoutModalOpen: false,
+  uploadModalOpen: false,
   activeVibe: 'quiet_luxury',
 
   setCameraActive: (active) => set({ isCameraActive: active }),
@@ -372,6 +376,10 @@ export const useAuraStore = create<AuraState>((set) => ({
     catalog,
     activeGarment: catalog[0] || null
   }),
+  addGarment: (garment) => set((state) => ({
+    catalog: [garment, ...state.catalog],
+    activeGarment: garment
+  })),
   setSelectedSize: (selectedSize) => set({ selectedSize }),
   setVtonMode: (vtonMode) => set({ vtonMode }),
   setAudioStreaming: (audioStreaming) => set({ audioStreaming }),
@@ -386,5 +394,6 @@ export const useAuraStore = create<AuraState>((set) => ({
   })),
   setMerchantAnalytics: (merchantAnalytics) => set({ merchantAnalytics }),
   setCheckoutModalOpen: (checkoutModalOpen) => set({ checkoutModalOpen }),
+  setUploadModalOpen: (uploadModalOpen) => set({ uploadModalOpen }),
   setActiveVibe: (activeVibe) => set({ activeVibe })
 }));

@@ -3,11 +3,12 @@ import { GarmentItem } from '@signbridge/shared-types';
 import { useAuraStore } from '../store/auraStore.js';
 import { api } from '../services/api.js';
 import { useNavigate } from 'react-router-dom';
-import { Compass, Sparkles, Zap, ShieldCheck } from 'lucide-react';
+import { Compass, Sparkles, Zap, ShieldCheck, Upload } from 'lucide-react';
+import { UploadGarmentModal } from '../components/commerce/UploadGarmentModal.js';
 
 export const CatalogPage: React.FC = () => {
   const navigate = useNavigate();
-  const { catalog, setCatalog, setActiveGarment } = useAuraStore();
+  const { catalog, setCatalog, setActiveGarment, setUploadModalOpen } = useAuraStore();
   const [selectedVibe, setSelectedVibe] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
@@ -71,8 +72,16 @@ export const CatalogPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Vibe filter pills */}
-        <div className="flex items-center gap-1.5 flex-wrap">
+        {/* Vibe filter pills & Upload Action */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setUploadModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs uppercase tracking-wider transition-all shadow-md active:scale-95"
+          >
+            <Upload className="w-3.5 h-3.5 stroke-[2.5]" />
+            <span>Upload Your Piece</span>
+          </button>
+
           {vibes.map((v) => (
             <button
               key={v}
@@ -160,6 +169,8 @@ export const CatalogPage: React.FC = () => {
           </div>
         ))}
       </div>
+
+      <UploadGarmentModal />
     </div>
   );
 };
