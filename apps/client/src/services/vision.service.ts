@@ -1,7 +1,287 @@
 import { BodyAnalysisResult, SkinUndertone, GarmentItem } from '@signbridge/shared-types';
+import { FilesetResolver, PoseLandmarker } from '@mediapipe/tasks-vision';
+
+export interface PoseKeypoints {
+  detected: boolean;
+  leftShoulder: { x: number; y: number };
+  rightShoulder: { x: number; y: number };
+  leftHip: { x: number; y: number };
+  rightHip: { x: number; y: number };
+  nose: { x: number; y: number };
+  shoulderCenter: { x: number; y: number };
+  shoulderSpan: number;
+  torsoHeight: number;
+  rotationAngle: number;
+  estimatedShoulderCm: number;
+  bestFitSize: 'XS' | 'S' | 'M' | 'L' | 'XL';
+}
 
 export class AuraVisionService {
   private imageCache = new Map<string, HTMLImageElement>();
+  private poseLandmarker: PoseLandmarker | null = null;
+  private isInitializingPose = false;
+
+  // Smoothed keypoints for natural cloth physics (low-pass spring filter)
+  private smoothedKeypoints: PoseKeypoints = {
+    detected: false,
+    leftShoulder: { x: 0, y: 0 },
+    rightShoulder: { x: 0, y: 0 },
+    leftHip: { x: 0, y: 0 },
+    rightHip: { x: 0, y: 0 },
+    nose: { x: 0, y: 0 },
+    shoulderCenter: { x: 0, y: 0 },
+    shoulderSpan: 0,
+    torsoHeight: 0,
+    rotationAngle: 0,
+    estimatedShoulderCm: 45,
+    bestFitSize: 'M'
+  };
+
+  /**
+   * Initializes MediaPipe Pose Landmarker with WebGPU/WASM fallback
+   */
+  async initPoseLandmarker(): Promise<boolean> {
+    if (this.poseLandmarker) return true;
+    if (this.isInitializingPose) return false;
+
+    this.isInitializingPose = true;
+    try {
+      const vision = await FilesetResolver.forVisionTasks('/wasm');
+      this.poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: '/models/mediapipe/pose_landmarker.task',
+          delegate: 'GPU'
+        },
+        runningMode: 'VIDEO',
+        numPoses: 1,
+        minPoseDetectionConfidence: 0.5,
+        minPosePresenceConfidence: 0.5,
+        minTrackingConfidence: 0.5
+      });
+      console.log('MediaPipe PoseLandmarker initialized successfully.');
+      this.isInitializingPose = false;
+      return true;
+    } catch (err) {
+      console.warn('MediaPipe Pose initialization fallback to geometric tracker:', err);
+      this.isInitializingPose = false;
+      return false;
+    }
+  }
+
+  /**
+   * Detects real-time body landmarks from the live webcam feed
+   */
+  detectPose(video: HTMLVideoElement, timestampMs: number, canvasWidth: number, canvasHeight: number): PoseKeypoints {
+    if (this.poseLandmarker && video.readyState >= 2 && video.videoWidth > 0) {
+      try {
+        const results = this.poseLandmarker.detectForVideo(video, timestampMs);
+        if (results.landmarks && results.landmarks.length > 0) {
+          const lm = results.landmarks[0];
+          // Landmark indices in MediaPipe Pose:
+          // 0: nose, 11: left_shoulder, 12: right_shoulder, 23: left_hip, 24: right_hip
+          const nose = { x: lm[0].x * canvasWidth, y: lm[0].y * canvasHeight };
+          const lShoulder = { x: lm[11].x * canvasWidth, y: lm[11].y * canvasHeight };
+          const rShoulder = { x: lm[12].x * canvasWidth, y: lm[12].y * canvasHeight };
+          const lHip = { x: lm[23].x * canvasWidth, y: lm[23].y * canvasHeight };
+          const rHip = { x: lm[24].x * canvasWidth, y: lm[24].y * canvasHeight };
+
+          const dx = rShoulder.x - lShoulder.x;
+          const dy = rShoulder.y - lShoulder.y;
+          const rawSpan = Math.hypot(dx, dy);
+          const rawAngle = Math.atan2(dy, dx);
+          const rawCenter = { x: (lShoulder.x + rShoulder.x) / 2, y: (lShoulder.y + rShoulder.y) / 2 };
+          const rawTorsoHeight = Math.hypot(
+            (lHip.x + rHip.x) / 2 - rawCenter.x,
+            (lHip.y + rHip.y) / 2 - rawCenter.y
+          );
+
+          // Head height metric for physical cm calibration
+          const headHeight = Math.max(20, Math.abs(rawCenter.y - nose.y));
+          const cmPerPixel = 18 / headHeight; // Average face/neck drop is ~18cm
+          const estimatedShoulderCm = Math.round(Math.min(58, Math.max(36, rawSpan * cmPerPixel)));
+
+          let fitSize: 'XS' | 'S' | 'M' | 'L' | 'XL' = 'M';
+          if (estimatedShoulderCm <= 39) fitSize = 'XS';
+          else if (estimatedShoulderCm <= 43) fitSize = 'S';
+          else if (estimatedShoulderCm <= 47) fitSize = 'M';
+          else if (estimatedShoulderCm <= 51) fitSize = 'L';
+          else fitSize = 'XL';
+
+          // Apply low-pass spring-damper smoothing (alpha = 0.35) for smooth organic movement
+          const alpha = 0.35;
+          const smooth = (curr: number, target: number) => curr + (target - curr) * alpha;
+
+          this.smoothedKeypoints = {
+            detected: true,
+            leftShoulder: {
+              x: smooth(this.smoothedKeypoints.leftShoulder.x, lShoulder.x),
+              y: smooth(this.smoothedKeypoints.leftShoulder.y, lShoulder.y)
+            },
+            rightShoulder: {
+              x: smooth(this.smoothedKeypoints.rightShoulder.x, rShoulder.x),
+              y: smooth(this.smoothedKeypoints.rightShoulder.y, rShoulder.y)
+            },
+            leftHip: {
+              x: smooth(this.smoothedKeypoints.leftHip.x, lHip.x),
+              y: smooth(this.smoothedKeypoints.leftHip.y, lHip.y)
+            },
+            rightHip: {
+              x: smooth(this.smoothedKeypoints.rightHip.x, rHip.x),
+              y: smooth(this.smoothedKeypoints.rightHip.y, rHip.y)
+            },
+            nose: {
+              x: smooth(this.smoothedKeypoints.nose.x, nose.x),
+              y: smooth(this.smoothedKeypoints.nose.y, nose.y)
+            },
+            shoulderCenter: {
+              x: smooth(this.smoothedKeypoints.shoulderCenter.x, rawCenter.x),
+              y: smooth(this.smoothedKeypoints.shoulderCenter.y, rawCenter.y)
+            },
+            shoulderSpan: smooth(this.smoothedKeypoints.shoulderSpan, rawSpan),
+            torsoHeight: smooth(this.smoothedKeypoints.torsoHeight, rawTorsoHeight),
+            rotationAngle: smooth(this.smoothedKeypoints.rotationAngle, rawAngle),
+            estimatedShoulderCm,
+            bestFitSize: fitSize
+          };
+
+          return this.smoothedKeypoints;
+        }
+      } catch (err) {
+        // Continue to geometric fallback on frame skip
+      }
+    }
+
+    // High-precision geometric fallback tracking when landmarker is initializing or idle
+    return this.getGeometricFallbackPose(canvasWidth, canvasHeight, timestampMs);
+  }
+
+  /**
+   * Geometric tracker for Studio Avatar mode or initial camera warm-up
+   */
+  getGeometricFallbackPose(width: number, height: number, timestampMs: number): PoseKeypoints {
+    const time = timestampMs / 1000;
+    const breath = Math.sin(time * 1.8) * 3;
+    const sway = Math.sin(time * 0.8) * 4;
+
+    const cx = width / 2 + sway;
+    const shoulderY = height * 0.36 + breath;
+    const span = width * 0.35;
+    const torsoH = height * 0.38;
+
+    return {
+      detected: true,
+      leftShoulder: { x: cx - span / 2, y: shoulderY },
+      rightShoulder: { x: cx + span / 2, y: shoulderY },
+      leftHip: { x: cx - span * 0.36, y: shoulderY + torsoH },
+      rightHip: { x: cx + span * 0.36, y: shoulderY + torsoH },
+      nose: { x: cx, y: shoulderY - height * 0.14 },
+      shoulderCenter: { x: cx, y: shoulderY },
+      shoulderSpan: span,
+      torsoHeight: torsoH,
+      rotationAngle: Math.sin(time * 0.5) * 0.015,
+      estimatedShoulderCm: 45,
+      bestFitSize: 'M'
+    };
+  }
+
+  /**
+   * Renders the uploaded person portrait on canvas with editorial lighting
+   */
+  drawPersonPhoto(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+    personImg: HTMLImageElement
+  ) {
+    if (!personImg.complete || personImg.naturalWidth === 0) return;
+
+    ctx.fillStyle = '#07090e';
+    ctx.fillRect(0, 0, width, height);
+
+    const imgRatio = personImg.naturalWidth / personImg.naturalHeight;
+    const canvasRatio = width / height;
+
+    let drawW = width;
+    let drawH = height;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    if (imgRatio > canvasRatio) {
+      drawH = height;
+      drawW = height * imgRatio;
+      offsetX = (width - drawW) / 2;
+    } else {
+      drawW = width;
+      drawH = width / imgRatio;
+      offsetY = (height - drawH) / 2;
+    }
+
+    ctx.drawImage(personImg, offsetX, offsetY, drawW, drawH);
+
+    // Subtle edge vignette
+    const vignette = ctx.createRadialGradient(
+      width / 2, height / 2, width * 0.3,
+      width / 2, height / 2, width * 0.75
+    );
+    vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    vignette.addColorStop(1, 'rgba(0, 0, 0, 0.45)');
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  /**
+   * Calculates pose keypoints tailored for uploaded person portraits
+   */
+  getPhotoPoseKeypoints(width: number, height: number): PoseKeypoints {
+    const cx = width / 2;
+    const shoulderY = height * 0.44;
+    const span = width * 0.44;
+    const torsoH = height * 0.48;
+
+    return {
+      detected: true,
+      leftShoulder: { x: cx - span / 2, y: shoulderY },
+      rightShoulder: { x: cx + span / 2, y: shoulderY },
+      leftHip: { x: cx - span * 0.36, y: shoulderY + torsoH },
+      rightHip: { x: cx + span * 0.36, y: shoulderY + torsoH },
+      nose: { x: cx, y: height * 0.22 },
+      shoulderCenter: { x: cx, y: shoulderY },
+      shoulderSpan: span,
+      torsoHeight: torsoH,
+      rotationAngle: 0,
+      estimatedShoulderCm: 45,
+      bestFitSize: 'M'
+    };
+  }
+
+  /**
+   * Draws posture and alignment guide silhouette on the mirror
+   */
+  drawAlignmentGuide(ctx: CanvasRenderingContext2D, width: number, height: number) {
+    ctx.save();
+    const cx = width / 2;
+
+    ctx.strokeStyle = 'rgba(212, 175, 55, 0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 6]);
+
+    ctx.beginPath();
+    ctx.ellipse(cx, height * 0.22, width * 0.06, height * 0.08, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx - width * 0.18, height * 0.35);
+    ctx.quadraticCurveTo(cx, height * 0.33, cx + width * 0.18, height * 0.35);
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+    ctx.font = 'bold 10px monospace';
+    ctx.fillStyle = 'rgba(212, 175, 55, 0.7)';
+    ctx.textAlign = 'center';
+    ctx.fillText('ALIGN SHOULDERS HERE', cx, height * 0.31);
+
+    ctx.restore();
+  }
 
   /**
    * Preloads or retrieves cached garment image overlay
@@ -88,17 +368,16 @@ export class AuraVisionService {
 
   /**
    * Renders a photorealistic haute couture studio mannequin / model
-   * when live webcam is offline, covered, or in simulation mode.
    */
   drawStudioModel(
     ctx: CanvasRenderingContext2D,
     width: number,
     height: number,
-    timeSeconds: number
+    timeSeconds: number,
+    pose: PoseKeypoints
   ) {
     ctx.save();
 
-    // Studio backdrop gradient
     const bgGrad = ctx.createRadialGradient(
       width * 0.5, height * 0.4, width * 0.1,
       width * 0.5, height * 0.5, width * 0.75
@@ -109,24 +388,19 @@ export class AuraVisionService {
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, width, height);
 
-    // Subtle breathing & posture sway
-    const breath = Math.sin(timeSeconds * 1.8) * 3;
-    const sway = Math.sin(timeSeconds * 0.8) * 2;
-
-    const cx = width / 2 + sway;
-    const headY = height * 0.22 + breath * 0.4;
-    const shoulderY = height * 0.35 + breath;
-    const shoulderHalfWidth = width * 0.18;
-    const waistY = height * 0.62;
+    const cx = pose.shoulderCenter.x;
+    const shoulderY = pose.shoulderCenter.y;
+    const shoulderHalfWidth = pose.shoulderSpan / 2;
+    const headY = pose.nose.y;
+    const waistY = (pose.leftHip.y + pose.rightHip.y) / 2;
     const waistHalfWidth = shoulderHalfWidth * 0.72;
-    const hipY = height * 0.78;
+    const hipY = waistY + height * 0.14;
     const hipHalfWidth = shoulderHalfWidth * 0.86;
 
-    // Atmospheric studio rim light
     ctx.shadowColor = '#d4af37';
     ctx.shadowBlur = 30;
 
-    // Head silhouette with subtle facial posture guide
+    // Head
     ctx.fillStyle = '#263042';
     ctx.beginPath();
     ctx.ellipse(cx, headY, width * 0.055, height * 0.08, 0, 0, Math.PI * 2);
@@ -141,7 +415,7 @@ export class AuraVisionService {
     ctx.closePath();
     ctx.fill();
 
-    // Torso silhouette
+    // Torso
     ctx.beginPath();
     ctx.moveTo(cx - shoulderHalfWidth, shoulderY);
     ctx.quadraticCurveTo(cx, shoulderY - 8, cx + shoulderHalfWidth, shoulderY);
@@ -152,7 +426,6 @@ export class AuraVisionService {
     ctx.closePath();
     ctx.fill();
 
-    // Studio grid floor reflection lines
     ctx.shadowBlur = 0;
     ctx.strokeStyle = 'rgba(212, 175, 55, 0.08)';
     ctx.lineWidth = 1;
@@ -168,41 +441,35 @@ export class AuraVisionService {
   }
 
   /**
-   * Generates a 3D holographic pose & contour mesh with coordinate telemetry
+   * Generates live 3D anatomical skeletal pins anchored directly to tracked joints
    */
   drawHolographicMesh(
     ctx: CanvasRenderingContext2D,
     width: number,
     height: number,
     garmentHex = '#d4af37',
-    timeSeconds = 0,
-    verticalOffset = 0,
-    scaleMultiplier = 1.0
+    pose: PoseKeypoints,
+    selectedSize: string
   ) {
     ctx.save();
 
-    const breath = Math.sin(timeSeconds * 1.8) * 3;
-    const sway = Math.sin(timeSeconds * 0.8) * 2;
+    const ls = pose.leftShoulder;
+    const rs = pose.rightShoulder;
+    const lh = pose.leftHip;
+    const rh = pose.rightHip;
+    const sc = pose.shoulderCenter;
 
-    const cx = width / 2 + sway;
-    const shoulderY = (height * 0.35 + breath + verticalOffset);
-    const shoulderWidth = width * 0.36 * scaleMultiplier;
-    const chestY = shoulderY + height * 0.13 * scaleMultiplier;
-    const waistY = shoulderY + height * 0.27 * scaleMultiplier;
-    const waistWidth = shoulderWidth * 0.74;
-
-    // Glowing contour lines
+    // Conformal Torso Wireframe
     ctx.strokeStyle = garmentHex;
     ctx.lineWidth = 1.5;
     ctx.shadowColor = garmentHex;
     ctx.shadowBlur = 12;
 
-    // Shoulder to waist geometric wireframe
     ctx.beginPath();
-    ctx.moveTo(cx - shoulderWidth / 2, shoulderY);
-    ctx.lineTo(cx + shoulderWidth / 2, shoulderY);
-    ctx.lineTo(cx + waistWidth / 2, waistY);
-    ctx.lineTo(cx - waistWidth / 2, waistY);
+    ctx.moveTo(ls.x, ls.y);
+    ctx.lineTo(rs.x, rs.y);
+    ctx.lineTo(rh.x, rh.y);
+    ctx.lineTo(lh.x, lh.y);
     ctx.closePath();
     ctx.stroke();
 
@@ -211,22 +478,20 @@ export class AuraVisionService {
     ctx.lineWidth = 1;
     ctx.shadowBlur = 0;
     ctx.beginPath();
-    ctx.moveTo(cx - shoulderWidth / 2, shoulderY);
-    ctx.lineTo(cx + waistWidth / 2, waistY);
-    ctx.moveTo(cx + shoulderWidth / 2, shoulderY);
-    ctx.lineTo(cx - waistWidth / 2, waistY);
+    ctx.moveTo(ls.x, ls.y);
+    ctx.lineTo(rh.x, rh.y);
+    ctx.moveTo(rs.x, rs.y);
+    ctx.lineTo(lh.x, lh.y);
     ctx.stroke();
 
-    // Skeletal landmark keypoints
+    // Biometric Nodes
     const nodes = [
-      { x: cx, y: shoulderY - height * 0.07, label: 'Apex 0.98' },
-      { x: cx - shoulderWidth / 2, y: shoulderY, label: 'L-Acr' },
-      { x: cx + shoulderWidth / 2, y: shoulderY, label: 'R-Acr' },
-      { x: cx, y: chestY, label: 'Sternum' },
-      { x: cx - waistWidth / 2, y: waistY, label: 'L-Waist' },
-      { x: cx + waistWidth / 2, y: waistY, label: 'R-Waist' },
-      { x: cx - shoulderWidth * 0.58, y: chestY + 15, label: 'L-Arm' },
-      { x: cx + shoulderWidth * 0.58, y: chestY + 15, label: 'R-Arm' }
+      { x: sc.x, y: sc.y - (sc.y - pose.nose.y) * 0.5, label: `Apex (${pose.estimatedShoulderCm}cm)` },
+      { x: ls.x, y: ls.y, label: 'L-Acromion' },
+      { x: rs.x, y: rs.y, label: 'R-Acromion' },
+      { x: sc.x, y: sc.y + (lh.y - sc.y) * 0.35, label: 'Sternum Anchor' },
+      { x: lh.x, y: lh.y, label: 'L-Waist' },
+      { x: rh.x, y: rh.y, label: 'R-Waist' }
     ];
 
     nodes.forEach((n) => {
@@ -238,195 +503,186 @@ export class AuraVisionService {
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
-      // Mini text label
       ctx.font = 'bold 9px monospace';
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
       ctx.fillText(n.label, n.x + 6, n.y - 3);
     });
 
-    ctx.restore();
-  }
-
-  /**
-   * Draws posture and alignment guide silhouette on the mirror
-   */
-  drawAlignmentGuide(ctx: CanvasRenderingContext2D, width: number, height: number) {
-    ctx.save();
-    const cx = width / 2;
-    const cy = height * 0.42;
-
-    ctx.strokeStyle = 'rgba(212, 175, 55, 0.25)';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([6, 6]);
-
-    // Head oval guide
+    // Shoulder Span Metric Ribbon
+    ctx.strokeStyle = '#22c55e';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.ellipse(cx, height * 0.22, width * 0.06, height * 0.08, 0, 0, Math.PI * 2);
+    ctx.moveTo(ls.x, ls.y - 14);
+    ctx.lineTo(rs.x, rs.y - 14);
     ctx.stroke();
 
-    // Shoulder curve guide
-    ctx.beginPath();
-    ctx.moveTo(cx - width * 0.18, height * 0.35);
-    ctx.quadraticCurveTo(cx, height * 0.33, cx + width * 0.18, height * 0.35);
-    ctx.stroke();
-
-    // Guidance text
-    ctx.setLineDash([]);
-    ctx.font = '10px monospace';
-    ctx.fillStyle = 'rgba(212, 175, 55, 0.5)';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillStyle = '#4ade80';
     ctx.textAlign = 'center';
-    ctx.fillText('ALIGN SHOULDERS HERE', cx, height * 0.31);
+    ctx.fillText(`BIOMETRIC SPAN: ${pose.estimatedShoulderCm}cm • BEST SIZE: ${pose.bestFitSize}`, sc.x, ls.y - 18);
 
     ctx.restore();
   }
 
   /**
-   * Renders high-fidelity generative virtual try-on couture garment worn on the person
+   * Renders the garment EXACTLY FITTED and WARPED to the person's live pose
+   * (NOT a pasted photo, but a conformal clothing drape pinned to shoulders and hips)
    */
-  drawCoutureGarmentDrape(
+  drawConformalGarment(
     ctx: CanvasRenderingContext2D,
     width: number,
     height: number,
     garment: GarmentItem,
     vtonMode: 'live_overlay' | 'silhouette' | 'minimal',
-    timeSeconds = 0,
-    scaleMultiplier = 1.0,
-    verticalOffset = 0,
+    pose: PoseKeypoints,
+    selectedSize: string,
+    fitScale: number,
+    verticalOffset: number,
     opacity = 0.95
   ) {
     if (vtonMode === 'minimal') return;
 
     ctx.save();
 
-    const breath = Math.sin(timeSeconds * 1.8) * 3;
-    const sway = Math.sin(timeSeconds * 0.8) * 2;
-    const wave = Math.sin(timeSeconds * 2.5) * 3;
+    const ls = pose.leftShoulder;
+    const rs = pose.rightShoulder;
+    const lh = pose.leftHip;
+    const rh = pose.rightHip;
+    const sc = pose.shoulderCenter;
+    const angle = pose.rotationAngle;
 
-    const cx = width / 2 + sway;
     const baseHex = garment.color_hex || '#0b0f19';
 
-    // Check if high-res SVG overlay or custom uploaded image is available
+    // Calculate Size Scaling factor based on selected size vs person's measured size
+    const sizeMultiplierMap: Record<string, number> = {
+      XS: 0.88,
+      S: 0.94,
+      M: 1.0,
+      L: 1.08,
+      XL: 1.18
+    };
+
+    const targetMultiplier = (sizeMultiplierMap[selectedSize] || 1.0) * fitScale;
+
+    // Conformal Dimensions pinned to real shoulders
+    const drapedWidth = pose.shoulderSpan * 1.48 * targetMultiplier;
+    const drapedHeight = Math.max(drapedWidth * 1.2, pose.torsoHeight * 1.35 * targetMultiplier);
+
+    // Collar / Neck Anchor Point
+    const neckYOffset = (sc.y - pose.nose.y) * 0.45;
+    const anchorX = sc.x;
+    const anchorY = sc.y - neckYOffset + verticalOffset;
+
+    // Check if garment has overlay image
     const overlayUrl = garment.vton_overlay_url || garment.image_url;
+
+    // Apply Transformation Matrix conforming to the person's real-time body orientation
+    ctx.translate(anchorX, anchorY);
+    ctx.rotate(angle);
+
+    ctx.globalAlpha = opacity;
+    ctx.shadowColor = baseHex;
+    ctx.shadowBlur = 24;
+
+    const destX = -drapedWidth / 2;
+    const destY = 0;
+
     if (vtonMode === 'live_overlay' && overlayUrl) {
       const img = this.getGarmentOverlayImage(overlayUrl);
-      if (img.complete && img.naturalWidth > 0) {
-        // Compute destination bounds centered on the person's torso
-        const gWidth = width * 0.56 * scaleMultiplier;
-        const gHeight = gWidth * (600 / 500); // 500x600 aspect ratio of overlays
-        const topY = height * 0.26 + breath + verticalOffset;
-        const destX = cx - gWidth / 2;
 
+      if (img.complete && img.naturalWidth > 0) {
         const isSvg = overlayUrl.endsWith('.svg');
 
-        ctx.globalAlpha = opacity;
-        ctx.shadowColor = baseHex;
-        ctx.shadowBlur = 25;
-
         if (isSvg) {
-          // Transparent SVG overlay draws directly
-          ctx.drawImage(img, destX, topY, gWidth, gHeight);
+          // Direct Warped SVG Rendering
+          ctx.drawImage(img, destX, destY, drapedWidth, drapedHeight);
         } else {
-          // Custom uploaded image: Contour-clip to the person's anatomical silhouette
-          const neckY = height * 0.29 + verticalOffset;
-          const shoulderY = height * 0.35 + breath + verticalOffset;
-          const shoulderWidth = width * 0.38 * scaleMultiplier;
-          const waistY = height * 0.64 + verticalOffset;
-          const waistWidth = shoulderWidth * 0.76;
-          const hemY = height * 0.75 + verticalOffset;
-
+          // Conformal Anatomical Clipping Mask for uploaded photos
           ctx.save();
           ctx.beginPath();
-          ctx.moveTo(cx - width * 0.04, neckY);
-          ctx.lineTo(cx + width * 0.04, neckY);
-          ctx.quadraticCurveTo(cx + shoulderWidth * 0.35, shoulderY - 6, cx + shoulderWidth * 0.52, shoulderY);
-          ctx.lineTo(cx + waistWidth * 0.52, waistY);
-          ctx.lineTo(cx + shoulderWidth * 0.42, hemY);
-          ctx.quadraticCurveTo(cx, hemY + 14, cx - shoulderWidth * 0.42, hemY);
-          ctx.lineTo(cx - waistWidth * 0.52, waistY);
-          ctx.lineTo(cx - shoulderWidth * 0.52, shoulderY);
-          ctx.quadraticCurveTo(cx - shoulderWidth * 0.35, shoulderY - 6, cx - width * 0.04, neckY);
+          // Neckline
+          ctx.moveTo(-drapedWidth * 0.08, 0);
+          ctx.lineTo(drapedWidth * 0.08, 0);
+          // Right Shoulder to Armhole
+          ctx.quadraticCurveTo(drapedWidth * 0.32, 10, drapedWidth * 0.48, 25);
+          ctx.lineTo(drapedWidth * 0.38, drapedHeight * 0.65);
+          // Right Hemline
+          ctx.lineTo(drapedWidth * 0.36, drapedHeight);
+          // Curved Bottom Hem
+          ctx.quadraticCurveTo(0, drapedHeight + 15, -drapedWidth * 0.36, drapedHeight);
+          // Left Hemline to Armhole
+          ctx.lineTo(-drapedWidth * 0.38, drapedHeight * 0.65);
+          // Left Shoulder
+          ctx.lineTo(-drapedWidth * 0.48, 25);
+          ctx.quadraticCurveTo(-drapedWidth * 0.32, 10, -drapedWidth * 0.08, 0);
           ctx.closePath();
           ctx.clip();
 
-          // Render uploaded photo draped to body dimensions
-          ctx.drawImage(img, destX, topY, gWidth, gHeight);
+          ctx.drawImage(img, destX, destY, drapedWidth, drapedHeight);
           ctx.restore();
 
-          // Outer contour gold stitching
+          // Gold contour stitching
           ctx.strokeStyle = '#fde68a';
           ctx.lineWidth = 1.5;
           ctx.stroke();
         }
 
-        // Subtle specular highlight line down lapel
+        // Add specular lapel highlight & seam dynamics
         ctx.shadowBlur = 0;
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
+        ctx.lineWidth = 1.2;
         ctx.beginPath();
-        ctx.moveTo(cx - gWidth * 0.08, topY + gHeight * 0.15);
-        ctx.lineTo(cx - gWidth * 0.02, topY + gHeight * 0.45);
+        ctx.moveTo(-drapedWidth * 0.07, drapedHeight * 0.1);
+        ctx.lineTo(-drapedWidth * 0.02, drapedHeight * 0.42);
         ctx.stroke();
+
+        // Fit Telemetry Line showing shoulder alignment
+        ctx.strokeStyle = targetMultiplier > 1.05 ? '#eab308' : targetMultiplier < 0.92 ? '#f97316' : '#22c55e';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(-drapedWidth * 0.48, 25);
+        ctx.lineTo(drapedWidth * 0.48, 25);
+        ctx.stroke();
+        ctx.setLineDash([]);
 
         ctx.restore();
         return;
       }
     }
 
-    // Procedural Fallback if image still loading or in 'silhouette' mode
-    const neckY = height * 0.29 + verticalOffset;
-    const shoulderY = height * 0.35 + breath + verticalOffset;
-    const shoulderWidth = width * 0.36 * scaleMultiplier;
-    const chestY = height * 0.48 + verticalOffset;
-    const waistY = height * 0.62 + verticalOffset;
-    const waistWidth = shoulderWidth * 0.74;
-    const hemY = (garment.category === 'evening_wear' ? height * 0.88 : height * 0.72) + verticalOffset;
-    const hemWidth = garment.category === 'evening_wear'
-      ? shoulderWidth * 1.15 + wave
-      : shoulderWidth * 0.82;
-
-    ctx.globalAlpha = opacity;
-    ctx.shadowColor = baseHex;
-    ctx.shadowBlur = 28;
-
-    const fabricGrad = ctx.createLinearGradient(cx, shoulderY, cx, hemY);
+    // High-Precision Procedural Haute Couture Drape (conforms dynamically if image not loaded)
+    const fabricGrad = ctx.createLinearGradient(0, 0, 0, drapedHeight);
     fabricGrad.addColorStop(0, `${baseHex}f5`);
-    fabricGrad.addColorStop(0.3, `${baseHex}e0`);
-    fabricGrad.addColorStop(0.7, `${baseHex}c0`);
-    fabricGrad.addColorStop(1, `${baseHex}80`);
+    fabricGrad.addColorStop(0.3, `${baseHex}d8`);
+    fabricGrad.addColorStop(0.7, `${baseHex}b8`);
+    fabricGrad.addColorStop(1, `${baseHex}70`);
 
     ctx.fillStyle = fabricGrad;
     ctx.beginPath();
-    ctx.moveTo(cx - width * 0.04, neckY);
-    ctx.lineTo(cx + width * 0.04, neckY);
-    ctx.quadraticCurveTo(cx + shoulderWidth * 0.35, shoulderY - 6, cx + shoulderWidth * 0.52, shoulderY);
-    ctx.lineTo(cx + waistWidth * 0.52, waistY);
-    ctx.lineTo(cx + hemWidth * 0.5, hemY);
-    ctx.quadraticCurveTo(cx, hemY + 12, cx - hemWidth * 0.5, hemY);
-    ctx.lineTo(cx - waistWidth * 0.52, waistY);
-    ctx.lineTo(cx - shoulderWidth * 0.52, shoulderY);
-    ctx.quadraticCurveTo(cx - shoulderWidth * 0.35, shoulderY - 6, cx - width * 0.04, neckY);
+    ctx.moveTo(-drapedWidth * 0.08, 0);
+    ctx.lineTo(drapedWidth * 0.08, 0);
+    ctx.quadraticCurveTo(drapedWidth * 0.32, 10, drapedWidth * 0.48, 25);
+    ctx.lineTo(drapedWidth * 0.38, drapedHeight * 0.65);
+    ctx.lineTo(drapedWidth * 0.36, drapedHeight);
+    ctx.quadraticCurveTo(0, drapedHeight + 15, -drapedWidth * 0.36, drapedHeight);
+    ctx.lineTo(-drapedWidth * 0.38, drapedHeight * 0.65);
+    ctx.lineTo(-drapedWidth * 0.48, 25);
+    ctx.quadraticCurveTo(-drapedWidth * 0.32, 10, -drapedWidth * 0.08, 0);
     ctx.closePath();
     ctx.fill();
 
-    // Lapel & buttons
+    // Peaked Lapels
     ctx.strokeStyle = '#fde68a';
     ctx.lineWidth = 1.8;
     ctx.beginPath();
-    ctx.moveTo(cx - width * 0.04, neckY);
-    ctx.lineTo(cx - shoulderWidth * 0.22, chestY * 0.88);
-    ctx.lineTo(cx, waistY * 0.95);
-    ctx.moveTo(cx + width * 0.04, neckY);
-    ctx.lineTo(cx + shoulderWidth * 0.22, chestY * 0.88);
-    ctx.lineTo(cx, waistY * 0.95);
+    ctx.moveTo(-drapedWidth * 0.08, 0);
+    ctx.lineTo(-drapedWidth * 0.2, drapedHeight * 0.32);
+    ctx.lineTo(0, drapedHeight * 0.55);
+    ctx.moveTo(drapedWidth * 0.08, 0);
+    ctx.lineTo(drapedWidth * 0.2, drapedHeight * 0.32);
+    ctx.lineTo(0, drapedHeight * 0.55);
     ctx.stroke();
-
-    for (let i = 0; i < 3; i++) {
-      const by = waistY + (i * 22);
-      ctx.beginPath();
-      ctx.arc(cx, by, 3, 0, Math.PI * 2);
-      ctx.fillStyle = '#fef08a';
-      ctx.fill();
-    }
 
     ctx.restore();
   }

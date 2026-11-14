@@ -281,7 +281,8 @@ export const INITIAL_LUXURY_CATALOG: GarmentItem[] = [
 interface AuraState {
   isCameraActive: boolean;
   isModelReady: boolean;
-  mirrorSource: 'camera' | 'studio_avatar';
+  mirrorSource: 'photo_tryon' | 'camera' | 'studio_avatar';
+  personPhotoUrl: string;
   bodyScan: BodyAnalysisResult | null;
   activeGarment: GarmentItem | null;
   catalog: GarmentItem[];
@@ -299,7 +300,8 @@ interface AuraState {
 
   setCameraActive: (active: boolean) => void;
   setModelReady: (ready: boolean) => void;
-  setMirrorSource: (source: 'camera' | 'studio_avatar') => void;
+  setMirrorSource: (source: 'photo_tryon' | 'camera' | 'studio_avatar') => void;
+  setPersonPhotoUrl: (url: string) => void;
   setBodyScan: (scan: BodyAnalysisResult) => void;
   setActiveGarment: (garment: GarmentItem | null) => void;
   setCatalog: (catalog: GarmentItem[]) => void;
@@ -321,7 +323,8 @@ interface AuraState {
 export const useAuraStore = create<AuraState>((set) => ({
   isCameraActive: false,
   isModelReady: true,
-  mirrorSource: 'camera',
+  mirrorSource: 'photo_tryon',
+  personPhotoUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80',
   bodyScan: {
     detected: true,
     shoulder_width_cm: 46.2,
@@ -367,6 +370,7 @@ export const useAuraStore = create<AuraState>((set) => ({
   setCameraActive: (active) => set({ isCameraActive: active }),
   setModelReady: (ready) => set({ isModelReady: ready }),
   setMirrorSource: (source) => set({ mirrorSource: source }),
+  setPersonPhotoUrl: (personPhotoUrl) => set({ personPhotoUrl }),
   setBodyScan: (bodyScan) => set({
     bodyScan,
     selectedSize: bodyScan.estimated_size === 'Custom Couture' ? 'M' : bodyScan.estimated_size
