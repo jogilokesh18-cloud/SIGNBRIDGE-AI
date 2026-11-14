@@ -9,9 +9,279 @@ import {
   AestheticVibe
 } from '@signbridge/shared-types';
 
+export const INITIAL_LUXURY_CATALOG: GarmentItem[] = [
+  {
+    id: 'garment-001',
+    name: 'Midnight Wool-Silk Sculptural Tuxedo Jacket',
+    designer: 'Atelier Saint Laurent',
+    price: 2650,
+    currency: 'USD',
+    category: 'formalwear',
+    aesthetic_vibe: 'black_tie',
+    description: 'Precision-tailored from 180s virgin wool with fluid mulberry silk peaked lapels. Architectural drop shoulder engineered for modern red-carpet formalwear.',
+    materials: ['85% Super 180s Virgin Wool', '15% Mulberry Silk', 'Cupro Bemberg Lining'],
+    image_url: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=800&q=80',
+    vton_overlay_url: '/assets/garments/tuxedo_overlay.svg',
+    color_hex: '#0b0f19',
+    available_sizes: ['XS', 'S', 'M', 'L', 'XL'],
+    fit_score: 98,
+    match_reason: 'Complements sharp shoulder posture and warm evening lighting.',
+    in_stock: true,
+    featured: true
+  },
+  {
+    id: 'garment-002',
+    name: 'Fluid Emerald Satin Slip & Relaxed Blazer Ensemble',
+    designer: 'The Row Collection',
+    price: 3200,
+    currency: 'USD',
+    category: 'evening_wear',
+    aesthetic_vibe: 'quiet_luxury',
+    description: 'Understated Italian double-faced silk satin. Hand-rolled hems drape naturally against walking motion with subtle luminous sheen.',
+    materials: ['100% Italian Silk Charmeuse', 'Mother-of-Pearl Fasteners'],
+    image_url: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=800&q=80',
+    vton_overlay_url: '/assets/garments/emerald_overlay.svg',
+    color_hex: '#064e3b',
+    available_sizes: ['XS', 'S', 'M', 'L'],
+    fit_score: 96,
+    match_reason: 'Deep jewel tone accentuates olive and warm golden skin undertones.',
+    in_stock: true,
+    featured: true
+  },
+  {
+    id: 'garment-003',
+    name: 'Loro Piana Double-Breasted Cashmere Trench',
+    designer: 'Brunello Cucinelli & Co.',
+    price: 4400,
+    currency: 'USD',
+    category: 'outerwear',
+    aesthetic_vibe: 'quiet_luxury',
+    description: 'Spun from Mongolian baby cashmere with storm-system water-repellent micro-membrane. Featherlight heat retention with unstructured drape.',
+    materials: ['100% Mongolian Baby Cashmere', 'Horn Buttons', 'Storm Membrane'],
+    image_url: 'https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80',
+    vton_overlay_url: '/assets/garments/cashmere_overlay.svg',
+    color_hex: '#d6c7b2',
+    available_sizes: ['S', 'M', 'L', 'XL'],
+    fit_score: 95,
+    match_reason: 'Sand camel tone creates high contrast with dark hair and cool palettes.',
+    in_stock: true,
+    featured: true
+  },
+  {
+    id: 'garment-004',
+    name: 'Architectural Obsidian Draped Evening Gown',
+    designer: 'Maison Rick Owens',
+    price: 3850,
+    currency: 'USD',
+    category: 'evening_wear',
+    aesthetic_vibe: 'avant_garde',
+    description: 'Bias-cut washed lambskin and bias georgette create a statuesque, aerodynamic silhouette with high side-slit and cathedral train.',
+    materials: ['Fleece Wool Jersey', 'Washed Nappa Leather Trims'],
+    image_url: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=800&q=80',
+    vton_overlay_url: '/assets/garments/gown_overlay.svg',
+    color_hex: '#18181b',
+    available_sizes: ['XS', 'S', 'M', 'L'],
+    fit_score: 94,
+    match_reason: 'Vertical drape flatters tall and slender silhouettes effortlessly.',
+    in_stock: true,
+    featured: false
+  },
+  {
+    id: 'garment-005',
+    name: 'Cyber-Tailored Luminescent Storm Parka',
+    designer: 'Prada Linea Rossa 3.0',
+    price: 2450,
+    currency: 'USD',
+    category: 'outerwear',
+    aesthetic_vibe: 'cyber_tailored',
+    description: 'Thermo-welded technical Gore-Tex Pro shell with reflective micro-glass prism coating. Articulated sleeves designed for high-mobility city transit.',
+    materials: ['3-Layer Recycled Polyamide', 'Gore-Tex Pro Membrane', 'Prism Yarn'],
+    image_url: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=800&q=80',
+    vton_overlay_url: '/assets/garments/parka_overlay.svg',
+    color_hex: '#27272a',
+    available_sizes: ['S', 'M', 'L', 'XL'],
+    fit_score: 97,
+    match_reason: 'Engineered boxy fit balances broader shoulders with modern street couture.',
+    in_stock: true,
+    featured: true
+  },
+  {
+    id: 'garment-006',
+    name: 'Minimalist Raw Indigo Chore Kimono',
+    designer: 'Visvim Atelier Kyoto',
+    price: 1950,
+    currency: 'USD',
+    category: 'knitwear',
+    aesthetic_vibe: 'minimalist_chic',
+    description: 'Woven on vintage 1950s Toyoda shuttle looms with natural indigo dye. Hand-stitched Sashiko reinforcement at stress junctures.',
+    materials: ['14oz Natural Indigo Selvedge Cotton', 'Indigo Deerskin Patch'],
+    image_url: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80',
+    vton_overlay_url: '/assets/garments/kimono_overlay.svg',
+    color_hex: '#1e3a8a',
+    available_sizes: ['S', 'M', 'L'],
+    fit_score: 92,
+    match_reason: 'Relaxed kimono collar elongates neckline and provides breezy silhouette.',
+    in_stock: true,
+    featured: false
+  },
+  {
+    id: 'garment-007',
+    name: 'Reversible Double-Faced Cashmere Cape-Coat',
+    designer: 'Atelier Hermès Paris',
+    price: 5850,
+    currency: 'USD',
+    category: 'outerwear',
+    aesthetic_vibe: 'quiet_luxury',
+    description: 'Hand-sewn double cashmere blanket drape with calfskin toggle fasteners. Reversible from ecru oatmeal to burnt caramel, offering sculpted luxury volume.',
+    materials: ['100% Cashmere Double Face', 'Barenia Calfskin Trim', 'Palladium Hardware'],
+    image_url: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80',
+    vton_overlay_url: '/assets/garments/cape_overlay.svg',
+    color_hex: '#b45309',
+    available_sizes: ['XS', 'S', 'M', 'L'],
+    fit_score: 97,
+    match_reason: 'Generous cocoon drape flatters any silhouette while exuding timeless nobility.',
+    in_stock: true,
+    featured: true
+  },
+  {
+    id: 'garment-008',
+    name: 'Hourglass Houndstooth Peplum Bar Jacket',
+    designer: 'Christian Dior Haute Couture',
+    price: 4400,
+    currency: 'USD',
+    category: 'formalwear',
+    aesthetic_vibe: 'black_tie',
+    description: 'An architectural tribute to the 1947 New Look. Features hand-padded curved hips, basque waist, and micro-houndstooth spun wool.',
+    materials: ['90% Virgin Wool', '10% Silk Taffeta', 'Horn Buttons'],
+    image_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
+    vton_overlay_url: '/assets/garments/bar_jacket_overlay.svg',
+    color_hex: '#292524',
+    available_sizes: ['XS', 'S', 'M', 'L'],
+    fit_score: 96,
+    match_reason: 'Pinched waist and sculpted basque enhance feminine hourglass proportions.',
+    in_stock: true,
+    featured: true
+  },
+  {
+    id: 'garment-009',
+    name: 'Intrecciato Waxed Nappa Trench',
+    designer: 'Bottega Veneta Atelier',
+    price: 6800,
+    currency: 'USD',
+    category: 'outerwear',
+    aesthetic_vibe: 'avant_garde',
+    description: 'Supple Italian lambskin woven in oversized Intrecciato across yoke and storm flap. Finished with a deep waxed forest-green luster.',
+    materials: ['100% Waxed Lambskin Leather', 'Titanium Buckle', 'Silk-Blend Lining'],
+    image_url: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=800&q=80',
+    vton_overlay_url: '/assets/garments/leather_trench_overlay.svg',
+    color_hex: '#14532d',
+    available_sizes: ['S', 'M', 'L', 'XL'],
+    fit_score: 95,
+    match_reason: 'Structured leather collar frames the jawline with decisive authority.',
+    in_stock: true,
+    featured: true
+  },
+  {
+    id: 'garment-010',
+    name: 'Deconstructed Asymmetric Cable-Knit Tunic',
+    designer: 'Maison Margiela Artisanal',
+    price: 2350,
+    currency: 'USD',
+    category: 'knitwear',
+    aesthetic_vibe: 'avant_garde',
+    description: 'Heavy gauge alpaca-wool blend knit with intentional laddered drop stitches, raw slub edges, and four iconic white stitches across the nape.',
+    materials: ['70% Baby Alpaca', '30% Highland Wool'],
+    image_url: 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?auto=format&fit=crop&w=800&q=80',
+    vton_overlay_url: '/assets/garments/cable_knit_overlay.svg',
+    color_hex: '#e2e8f0',
+    available_sizes: ['S', 'M', 'L'],
+    fit_score: 91,
+    match_reason: 'Asymmetric hemline creates dynamic vertical motion during transit.',
+    in_stock: true,
+    featured: false
+  },
+  {
+    id: 'garment-011',
+    name: 'Sunburst Pleated Gilded Organza Gala Gown',
+    designer: 'Schiaparelli Surrealist Couture',
+    price: 6200,
+    currency: 'USD',
+    category: 'evening_wear',
+    aesthetic_vibe: 'avant_garde',
+    description: 'Sunburst accordion pleated gold-threaded metallic organza with sculpted gilded bronze breastplate and dramatic floating capelet.',
+    materials: ['Metallic Filament Organza', 'Hand-Hammered Gilded Brass Hardware'],
+    image_url: 'https://images.unsplash.com/photo-1518049362265-d5b2a6467637?auto=format&fit=crop&w=800&q=80',
+    vton_overlay_url: '/assets/garments/gold_gown_overlay.svg',
+    color_hex: '#d4af37',
+    available_sizes: ['XS', 'S', 'M'],
+    fit_score: 99,
+    match_reason: 'Illuminates warm and neutral undertones under gallery and red-carpet lighting.',
+    in_stock: true,
+    featured: true
+  },
+  {
+    id: 'garment-012',
+    name: 'Bordeaux Silk-Satin Peak Smoking Jacket',
+    designer: 'Tom Ford Runway',
+    price: 4150,
+    currency: 'USD',
+    category: 'formalwear',
+    aesthetic_vibe: 'black_tie',
+    description: 'Lustrous deep-bordeaux duchess satin smoking jacket with bold 4.5-inch silk grosgrain peaked lapels and single horn link-closure.',
+    materials: ['100% Duchess Silk Satin', 'Silk Grosgrain Lapels', 'Milanese Boutonnière'],
+    image_url: 'https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?auto=format&fit=crop&w=800&q=80',
+    vton_overlay_url: '/assets/garments/smoking_overlay.svg',
+    color_hex: '#581c87',
+    available_sizes: ['XS', 'S', 'M', 'L', 'XL'],
+    fit_score: 98,
+    match_reason: 'Commanding shoulder construction enhances upper body proportions.',
+    in_stock: true,
+    featured: true
+  },
+  {
+    id: 'garment-013',
+    name: 'Riviera Raw Linen Overshirt & Pleated Trousers',
+    designer: 'Jacquemus Le Raphia',
+    price: 1650,
+    currency: 'USD',
+    category: 'knitwear',
+    aesthetic_vibe: 'resort_couture',
+    description: 'Sun-bleached French Normandy linen with dropped camp collar, mother-of-pearl buttons, and matching high-waisted double-pleated trousers.',
+    materials: ['100% French Normandy Flax Linen', 'Mother-of-Pearl Buttons'],
+    image_url: 'https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?auto=format&fit=crop&w=800&q=80',
+    vton_overlay_url: '/assets/garments/linen_overlay.svg',
+    color_hex: '#fef3c7',
+    available_sizes: ['S', 'M', 'L', 'XL'],
+    fit_score: 93,
+    match_reason: 'Effortless relaxed silhouette ideal for Mediterranean resort environments.',
+    in_stock: true,
+    featured: false
+  },
+  {
+    id: 'garment-014',
+    name: 'Sculpted Cocoon Down Parka in Titanium Sheen',
+    designer: 'Balenciaga Couture',
+    price: 3900,
+    currency: 'USD',
+    category: 'outerwear',
+    aesthetic_vibe: 'cyber_tailored',
+    description: 'Volumetric cocoon silhouette filled with cruelty-free European goose down, engineered from reflective liquid-titanium ripstop nylon.',
+    materials: ['Liquid Titanium Ripstop Nylon', '90/10 Goose Down Filling (800 Fill Power)'],
+    image_url: 'https://images.unsplash.com/photo-1548883354-7622d03aca27?auto=format&fit=crop&w=800&q=80',
+    vton_overlay_url: '/assets/garments/cocoon_overlay.svg',
+    color_hex: '#475569',
+    available_sizes: ['XS', 'S', 'M', 'L'],
+    fit_score: 94,
+    match_reason: 'Bold exaggerated collar and dropped cocoon silhouette redefine modern outerwear.',
+    in_stock: true,
+    featured: true
+  }
+];
+
 interface AuraState {
   isCameraActive: boolean;
   isModelReady: boolean;
+  mirrorSource: 'camera' | 'studio_avatar';
   bodyScan: BodyAnalysisResult | null;
   activeGarment: GarmentItem | null;
   catalog: GarmentItem[];
@@ -28,6 +298,7 @@ interface AuraState {
 
   setCameraActive: (active: boolean) => void;
   setModelReady: (ready: boolean) => void;
+  setMirrorSource: (source: 'camera' | 'studio_avatar') => void;
   setBodyScan: (scan: BodyAnalysisResult) => void;
   setActiveGarment: (garment: GarmentItem | null) => void;
   setCatalog: (catalog: GarmentItem[]) => void;
@@ -46,7 +317,8 @@ interface AuraState {
 
 export const useAuraStore = create<AuraState>((set) => ({
   isCameraActive: false,
-  isModelReady: false,
+  isModelReady: true,
+  mirrorSource: 'camera',
   bodyScan: {
     detected: true,
     shoulder_width_cm: 46.2,
@@ -58,8 +330,8 @@ export const useAuraStore = create<AuraState>((set) => ({
     lighting_kelvin: 3200,
     color_palette_recommendation: ['#0b0f19', '#064e3b', '#d6c7b2', '#78350f']
   },
-  activeGarment: null,
-  catalog: [],
+  activeGarment: INITIAL_LUXURY_CATALOG[0],
+  catalog: INITIAL_LUXURY_CATALOG,
   selectedSize: 'M',
   vtonMode: 'live_overlay',
   audioStreaming: false,
@@ -90,6 +362,7 @@ export const useAuraStore = create<AuraState>((set) => ({
 
   setCameraActive: (active) => set({ isCameraActive: active }),
   setModelReady: (ready) => set({ isModelReady: ready }),
+  setMirrorSource: (source) => set({ mirrorSource: source }),
   setBodyScan: (bodyScan) => set({
     bodyScan,
     selectedSize: bodyScan.estimated_size === 'Custom Couture' ? 'M' : bodyScan.estimated_size
@@ -103,10 +376,14 @@ export const useAuraStore = create<AuraState>((set) => ({
   setVtonMode: (vtonMode) => set({ vtonMode }),
   setAudioStreaming: (audioStreaming) => set({ audioStreaming }),
   setSentiment: (sentiment) => set({ sentiment }),
-  addMessage: (message) => set((state) => ({ conversation: [...state.conversation, message] })),
+  addMessage: (message) => set((state) => ({
+    conversation: [...state.conversation, message]
+  })),
   setConsulting: (isConsulting) => set({ isConsulting }),
   setOrders: (orders) => set({ orders }),
-  addOrder: (order) => set((state) => ({ orders: [order, ...state.orders] })),
+  addOrder: (order) => set((state) => ({
+    orders: [order, ...state.orders]
+  })),
   setMerchantAnalytics: (merchantAnalytics) => set({ merchantAnalytics }),
   setCheckoutModalOpen: (checkoutModalOpen) => set({ checkoutModalOpen }),
   setActiveVibe: (activeVibe) => set({ activeVibe })
