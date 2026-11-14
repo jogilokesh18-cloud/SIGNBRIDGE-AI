@@ -1,22 +1,27 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SpatialMirror } from '../components/mirror/SpatialMirror.js';
+import { GenerativeTryonStudio } from '../components/mirror/GenerativeTryonStudio.js';
 import { StylistHUD } from '../components/mirror/StylistHUD.js';
 import { GarmentSelector } from '../components/mirror/GarmentSelector.js';
 import { CheckoutModal } from '../components/commerce/CheckoutModal.js';
 import { UploadGarmentModal } from '../components/commerce/UploadGarmentModal.js';
 import { useAuraStore } from '../store/auraStore.js';
 import { api } from '../services/api.js';
+import { Sparkles, Camera, Image as ImageIcon } from 'lucide-react';
 
 export const MirrorPage: React.FC = () => {
   const { setCatalog } = useAuraStore();
+  const [experienceMode, setExperienceMode] = useState<'generative_studio' | 'live_camera'>('generative_studio');
 
   useEffect(() => {
     async function loadInitialData() {
       try {
         const garments = await api.getCatalog();
-        setCatalog(garments);
+        if (garments && garments.length > 0) {
+          setCatalog(garments);
+        }
       } catch (err) {
-        console.error('Failed to load catalog:', err);
+        console.warn('Initial data load notice:', err);
       }
     }
     loadInitialData();
@@ -24,29 +29,53 @@ export const MirrorPage: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-12 animate-fade-in">
-      {/* Top Banner / Spatial State */}
+      {/* Top Banner / Experience Mode Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-amber-500/10">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            Spatial Commerce Mirror
+            AI Virtual Try-On Studio
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Real-time generative virtual try-on, 3D body contouring, and Milanese luxury styling concierge.
+            Upload a person photo & product photo to synthesize photorealistic virtual try-on with elastic cloth warping.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/10 text-amber-300 text-xs font-semibold border border-amber-400/30">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-            Live Latent Diffusion Engine
-          </span>
+        {/* Mode Switcher Tabs */}
+        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-black/80 backdrop-blur-md border border-white/10 shadow-xl">
+          <button
+            onClick={() => setExperienceMode('generative_studio')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              experienceMode === 'generative_studio'
+                ? 'bg-amber-400 text-slate-950 shadow-md'
+                : 'text-slate-300 hover:text-white'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 fill-current" />
+            <span>AI Photo Synthesis Studio</span>
+          </button>
+
+          <button
+            onClick={() => setExperienceMode('live_camera')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              experienceMode === 'live_camera'
+                ? 'bg-amber-400 text-slate-950 shadow-md'
+                : 'text-slate-300 hover:text-white'
+            }`}
+          >
+            <Camera className="w-3.5 h-3.5" />
+            <span>Live Camera Mirror</span>
+          </button>
         </div>
       </div>
 
-      {/* Main Grid: Spatial Camera Mirror (Left) + Stylist HUD (Right) */}
+      {/* Main Grid: Studio/Mirror Canvas (Left) + Stylist HUD (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-7">
-          <SpatialMirror />
+          {experienceMode === 'generative_studio' ? (
+            <GenerativeTryonStudio />
+          ) : (
+            <SpatialMirror />
+          )}
         </div>
 
         <div className="lg:col-span-5">
